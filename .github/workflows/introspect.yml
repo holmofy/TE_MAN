@@ -18,6 +18,8 @@ jobs:
   introspect:
     runs-on: windows-latest
     timeout-minutes: 40
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
 
@@ -56,6 +58,18 @@ jobs:
           python scripts/introspect_te_man.py --out "$env:GITHUB_WORKSPACE\te_man_introspection.json"
           Write-Host "----- JSON 头部预览 -----"
           Get-Content "$env:GITHUB_WORKSPACE\te_man_introspection.json" -TotalCount 60
+
+      - name: Commit introspection result to repo
+        if: success()
+        shell: pwsh
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          New-Item -ItemType Directory -Force spec/_introspection | Out-Null
+          Copy-Item te_man_introspection.json spec/_introspection/te_man_introspection.json -Force
+          git add spec/_introspection/te_man_introspection.json
+          git commit -m "introspection result (run $env:GITHUB_RUN_ID)" --no-verify
+          git push
 
       - name: Upload introspection JSON
         if: always()

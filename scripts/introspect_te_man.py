@@ -185,8 +185,15 @@ def patch_torch_cuda_stub():
     props = SimpleNamespace(
         name="CUDA-EMU", total_memory=total_mem, major=8, minor=6,
         multi_processor_count=84, is_multi_gpu_board=False,
-        L2_cache_size=4 * 1024 ** 2,
+        L2_cache_size=4 * 1024 ** 2, gcnArchName="gfx1100",
+        is_integrated=False, uuid="00000000-0000-0000-0000-000000000000",
     )
+    from collections import defaultdict
+
+    def _mem_stats(*a, **k):
+        # comfy.model_management 直接下标取 'reserved_bytes.all.current' 等 key，
+        # 用 defaultdict 兜住任意 key
+        return defaultdict(int)
     _dev0 = torch.device("cuda", 0)  # 返回 device 对象，绕开 torch.device(int) 的 accelerator 路径
     cuda.is_available = lambda: True
     cuda.device_count = lambda: 1
@@ -204,7 +211,9 @@ def patch_torch_cuda_stub():
     cuda.empty_cache = lambda *a, **k: None
     cuda.synchronize = lambda *a, **k: None
     cuda.set_per_process_memory_fraction = lambda *a, **k: None
-    cuda.memory_stats = lambda *a, **k: {}
+    cuda.memory_stats = _mem_stats
+    cuda.memory_snapshot = lambda *a, **k: []
+    cuda.get_allocator_backend = lambda *a, **k: "native"
     cuda.utilization = lambda *a, **k: 0
     cuda.get_sync_debug_mode = lambda *a, **k: 0
     cuda.is_current_stream_capturing = lambda *a, **k: False
@@ -226,6 +235,8 @@ def patch_torch_cuda_stub():
         accel.get_device_capability = lambda *a, **k: (8, 6)
         accel.get_device_name = lambda *a, **k: "CUDA-EMU"
         accel.get_device_properties = lambda *a, **k: props
+        accel.memory_stats = _mem_stats
+        accel.memory_snapshot = lambda *a, **k: []
     except Exception:  # noqa: BLE001
         pass
     print("[stub] torch.cuda / torch.accelerator patched for CPU-only introspection")

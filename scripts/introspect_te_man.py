@@ -175,6 +175,18 @@ def main():
     # 解析 sys.argv，遇到我们的 --out 等未知参数会直接 SystemExit。
     sys.argv = [os.path.basename(sys.argv[0])]
 
+    # 关键：Windows runner 控制台默认 cp1252/charmap 编码，TE_MAN 的 logger 在
+    # import 期间打印中文会直接 UnicodeEncodeError。强制 UTF-8。
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8", errors="replace")
+        except Exception:  # noqa: BLE001
+            pass
+
+    # 输出路径先转绝对路径（后面会 os.chdir 到 ComfyUI 目录）
+    if args.out:
+        args.out = os.path.abspath(args.out)
+
     if not args.comfyui or not os.path.isdir(args.comfyui):
         print(f"[FATAL] ComfyUI 目录无效: {args.comfyui!r}", file=sys.stderr)
         return 2

@@ -50,10 +50,12 @@ jobs:
         shell: pwsh
         env:
           COMFYUI_DIR: ${{ runner.temp }}\ComfyUI
+          PYTHONUTF8: "1"
+          PYTHONIOENCODING: utf-8
         run: |
-          python scripts/introspect_te_man.py --out te_man_introspection.json
+          python scripts/introspect_te_man.py --out "$env:GITHUB_WORKSPACE\te_man_introspection.json"
           Write-Host "----- JSON 头部预览 -----"
-          Get-Content te_man_introspection.json -TotalCount 60
+          Get-Content "$env:GITHUB_WORKSPACE\te_man_introspection.json" -TotalCount 60
 
       - name: Upload introspection JSON
         if: always()

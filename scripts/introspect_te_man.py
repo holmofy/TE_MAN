@@ -160,6 +160,54 @@ def introspect_module(mod):
     return info
 
 
+# ---------------------------------------------------------------- torch.cuda 桩
+
+def patch_torch_cuda_stub():
+    """CPU 环境下模拟一个 GPU。
+
+    TE_MAN 的生成器模块在 import 时无条件调用 torch.cuda.current_device() 等
+    （真实运行环境必有 GPU）。introspection 只需要 import 成功并读取
+    INPUT_TYPES/RETURN_TYPES，不会真正执行 CUDA 运算，因此打桩即可。
+    """
+    try:
+        import torch
+    except ImportError:  # noqa: BLE001
+        return
+    cuda = torch.cuda
+    try:
+        if cuda.is_available():
+            return  # 真 GPU 环境不打桩
+    except Exception:  # noqa: BLE001
+        pass
+    from types import SimpleNamespace
+
+    total_mem = 24 * 1024 ** 3
+    props = SimpleNamespace(
+        name="CUDA-EMU", total_memory=total_mem, major=8, minor=6,
+        multi_processor_count=84, is_multi_gpu_board=False,
+        L2_cache_size=4 * 1024 ** 2,
+    )
+    cuda.is_available = lambda: True
+    cuda.device_count = lambda: 1
+    cuda.current_device = lambda: 0
+    cuda.set_device = lambda *a, **k: None
+    cuda.get_device_name = lambda *a, **k: "CUDA-EMU"
+    cuda.get_device_capability = lambda *a, **k: (8, 6)
+    cuda.get_device_properties = lambda *a, **k: props
+    cuda.mem_get_info = lambda *a, **k: (int(total_mem * 0.9), total_mem)
+    cuda.memory_allocated = lambda *a, **k: 0
+    cuda.memory_reserved = lambda *a, **k: 0
+    cuda.max_memory_allocated = lambda *a, **k: 0
+    cuda.max_memory_reserved = lambda *a, **k: 0
+    cuda.reset_peak_memory_stats = lambda *a, **k: None
+    cuda.empty_cache = lambda *a, **k: None
+    cuda.synchronize = lambda *a, **k: None
+    cuda.set_per_process_memory_fraction = lambda *a, **k: None
+    cuda.memory_stats = lambda *a, **k: {}
+    cuda.utilization = lambda *a, **k: 0
+    print("[stub] torch.cuda patched for CPU-only introspection")
+
+
 # ---------------------------------------------------------------- 主流程
 
 def main():
@@ -196,6 +244,8 @@ def main():
         if p not in sys.path:
             sys.path.insert(0, p)
     os.chdir(comfy_root)
+
+    patch_torch_cuda_stub()
 
     result = {
         "env": {

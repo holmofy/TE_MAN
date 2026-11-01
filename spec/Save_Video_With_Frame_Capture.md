@@ -42,7 +42,7 @@ ComfyUI **节点模块**（不在 `__init__.py` 的 `SKIP_MODULES` 中），单�
 - `OUTPUT_NODE` 属性存在（字符串 @0x10d10），本节点是输出节点 [高]
 - `DESCRIPTION = "保存输入视频到 ComfyUI 输出目录，并在节点前端提供暂停预览与截取当前帧功能"`（字符串 @0x11490 [高]）
 - `SEARCH_ALIASES` 属性存在（字符串 @0x10df0）；候选值为英文搜索别名 `save video`、`save video with preview`、`export video`、`video output`（四串均在 [中]，是否恰好为该四项未确认）
-- `RETURN_TYPES` / `RETURN_NAMES` 属性名字符串均存在（@0x11438 / @0x10178），但值无法从字符串还原；节点 `save_video_and_output` 存在局部变量 `result`（`{"ui": ..., "result": ...}` 风格）。前端 `onExecuted` 只消费 ui 里的 `video` 与 `te_prompt_text`，故最可能为空返回 tuple；是否附带 `VIDEO` 透传输出为**未确认**。
+- `RETURN_TYPES` / `RETURN_NAMES` 属性名字符串均存在（@0x11438 / @0x10178），但值无法从字符串还原；节点 `save_video_and_output` 存在局部变量 `result`（`{"ui": ..., "result": ...}` 风格）。前端 `onExecuted` 只消费 ui 里的 `video` 与 `te_prompt_text`，故最可能为空返回 tuple；是否附带 `VIDEO` 透传输出为**未确认**。→ **已确认：`RETURN_TYPES=("VIDEO",)`、`RETURN_NAMES=("video",)`（动态回填）——节点确有 VIDEO 透传输出，"空返回 tuple"推断被推翻**。
 
 ### 3.1 输入参数（INPUT_TYPES，存在 `required` / `hidden` / `optional` 键 [高]）
 
@@ -50,10 +50,10 @@ ComfyUI **节点模块**（不在 `__init__.py` 的 `SKIP_MODULES` 中），单�
 |---|---|---|---|
 | `video` | `VIDEO` | 左侧视频输入；tooltip `要保存的视频输入` + `接入后会优先使用这里的视频，并覆盖本地视频选择` | [高] |
 | `local_video` | COMBO（`_get_input_video_choices()` 动态选项） | tooltip `左侧 video 未连接时，使用这里选择 input 目录中的本地视频`；前端"加载视频"按钮上传到 `/upload/image`（`type=input`）后把文件名注入该下拉框 | [高] |
-| `filename_prefix` | `"STRING"`（默认值推断 `TE_MAN_Video`） | tooltip `保存到 output 目录时使用的文件名前缀`；默认值依据：`TE_MAN_Video` 字符串紧邻 `required` 出现、符合 TE 系前缀惯例（对照 Grok_Video_Generator `grok_video_`） | 名称[高]/默认值[中] |
+| `filename_prefix` | `"STRING"`（默认值推断 `TE_MAN_Video`） | tooltip `保存到 output 目录时使用的文件名前缀`；默认值依据：`TE_MAN_Video` 字符串紧邻 `required` 出现、符合 TE 系前缀惯例（对照 Grok_Video_Generator `grok_video_`） | 名称[高]/默认值[中]。**默认值已确认：`TE_MAN_Video`（动态回填）** |
 | hidden：`unique_id`(=`UNIQUE_ID`)、`prompt`(=`PROMPT`)、`extra_pnginfo`(=`EXTRA_PNGINFO`) | — | 供 te_prompt_text 提取与 ui 回传 | [高] |
 
-`optional` 键存在（@0x118f8），但对应可选输入内容**未确认**（可能为空或承载上述输入的可选项属性）。
+`optional` 键存在（@0x118f8），但对应可选输入内容**未确认**（可能为空或承载上述输入的可选项属性）。→ **已确认（动态回填）：`optional` 组恰含一个输入 `video: ("VIDEO", {...})`**；`local_video` 与 `filename_prefix` 在 `required` 组（`required`/`optional` 排布已定论）。
 
 ### 3.2 返回 / ui 契约 [高]（键名有据，结构为推断）
 
@@ -159,4 +159,60 @@ save_image_with_output_core   find_te_prompt_from_prompt_graph   build_prompt_ui
 - 节点内 DOM 预览 `te_videopreview` + 动作条按钮：加载视频（上传 `/upload/image` → 注入 `local_video` 下拉）、暂停预览/播放预览、截取当前帧（canvas 抓帧 → `<源视频名>_frame_<毫秒>ms.png` 上传 → 以 `TE_image_pro_save_image_with_output` 新建图片节点，复制本节点 `filename_prefix`，还原预览图并继承 `te_saved_prompt_text`）
 - `onExecuted` 读取 `video`（兜底 `images`/`videos`）与 `te_prompt_text`；与后端 ui 契约吻合
 
-**未确认项汇总**：`RETURN_TYPES`/`RETURN_NAMES` 具体值（是否含 VIDEO 透传输出）、`optional` 分组内容、`filename_prefix` 默认值是否为 `TE_MAN_Video`、`_VIDEO_EXT_BY_CONTAINER` 的完整容器→扩展名映射、`VALIDATE_INPUTS` 校验范围、`SEARCH_ALIASES` 是否恰为 `save video / save video with preview / export video / video output` 四项、`IS_CHANGED` 返回 `float('nan')` 的确定性、`_save_video_to_output` 的确切参数表。
+**未确认项汇总**：`RETURN_TYPES`/`RETURN_NAMES` 具体值（是否含 VIDEO 透传输出）→ **已解决（动态回填）：`RETURN_TYPES=("VIDEO",)`、`RETURN_NAMES=("video",)`，含 VIDEO 透传**；`optional` 分组内容 → **已解决：恰含 `video` 一个输入**；`filename_prefix` 默认值是否为 `TE_MAN_Video` → **已确认：是**；`_VIDEO_EXT_BY_CONTAINER` 的完整容器→扩展名映射 → **已确认（动态回填）：`mp4→.mp4, mov→.mov, webm→.webm, matroska→.mkv, mkv→.mkv, avi→.avi, mpegts→.ts, ts→.ts, gif→.gif`（共 9 对，运行时 dict 实测）**；`VALIDATE_INPUTS` 校验范围 → 仍未确认；`SEARCH_ALIASES` 是否恰为 `save video / save video with preview / export video / video output` 四项 → 仍未确认；`IS_CHANGED` 返回 `float('nan')` 的确定性 → 仍未确认；`_save_video_to_output` 的确切参数表 → 仍未确认。
+
+## 动态 introspection 回填（Windows+ComfyUI 真机实测）
+
+> 数据来源：GitHub Actions `Windows-2025Server` + Python 3.13.16 + ComfyUI（`D:\a\_temp\ComfyUI`）真实加载本 pyd 后运行时 introspection。以下均为 `INPUT_TYPES()` 实际返回值与模块 `__dict__` 直接读出。
+
+### (a) INPUT_TYPES 实测全表
+
+```python
+{
+  "required": {
+    "local_video":    ([运行时选项列表: ComfyUI input 目录现有视频, 空白项""在前],
+                       {"default": "",
+                        "tooltip": "可选。左侧 video 未连接时，使用这里选择 input 目录中的本地视频。"}),
+    "filename_prefix": ("STRING",
+                       {"default": "TE_MAN_Video",
+                        "tooltip": "保存到 output 目录时使用的文件名前缀。"})},
+  "optional": {
+    "video": ("VIDEO", {"tooltip": "要保存的视频输入。接入后会优先使用这里的视频，并覆盖本地视频选择。"})},
+  "hidden": {"unique_id": "UNIQUE_ID", "prompt": "PROMPT", "extra_pnginfo": "EXTRA_PNGINFO"}
+}
+```
+
+实测要点：
+- `local_video`：COMBO 型，选项为运行时枚举的 input 目录视频清单（空白项 `""` 在首位）；无 `image_upload` 类上传标志（上传由前端 JS 走 `/upload/image` 后注入下拉，与正文 §3.1 描述一致）。
+- `filename_prefix`：STRING widget，`default='TE_MAN_Video'`；无 `display_name`/`label`（与姊妹节点 Save_Image_With_Output 不同，该节点只有 tooltip）。
+- `video`：optional VIDEO 插槽。
+- hidden 三件套实测：`unique_id`/`prompt`/`extra_pnginfo`。
+- 无 min/max/step 数值参数。
+
+### (b) 节点元数据实测
+
+| 项 | 实测值 |
+|---|---|
+| 注册键 | `TE_image_pro_save_video` |
+| 显示名 | `TE MAN 保存视频video` |
+| 类名 | `TESaveVideoWithFrameCapture`，模块 `custom_nodes.TE_image.Save_Video_With_Frame_Capture` |
+| `FUNCTION` | `save_video_and_output` |
+| `CATEGORY` | `TE MAN/Utils` |
+| `OUTPUT_NODE` | `True`（实测布尔值） |
+| `RETURN_TYPES` | `("VIDEO",)` **已确认**（动态回填，推翻 §3.0"最可能为空返回 tuple"的推断） |
+| `RETURN_NAMES` | `("video",)` **已确认**（动态回填） |
+
+### (c) 模块常量实锤（运行时 `__dict__` 导出）
+
+| 常量 | 实测值 |
+|---|---|
+| `_HAS_COMFY_VIDEO` | `True`（实测布尔值——真机环境 `comfy_api.input_impl.VideoFromFile` 导入成功，守卫分支未触发） |
+| `_VIDEO_EXT_BY_CONTAINER` | `{"mp4": ".mp4", "mov": ".mov", "webm": ".webm", "matroska": ".mkv", "mkv": ".mkv", "avi": ".avi", "mpegts": ".ts", "ts": ".ts", "gif": ".gif"}` **已确认（完整 9 对映射，动态回填）**——正文"完整映射未确认"就此定论；`matroska`/`mpegts` 确为容器名键（与 `get_container_format` 返回值对应），mkv 双键 `matroska`/`mkv` 同映射 `.mkv` |
+| `NODE_CLASS_MAPPINGS` / `NODE_DISPLAY_NAME_MAPPINGS` | 如上注册表 |
+
+### (d) 对正文"未确认"项的核对结论
+
+- §3.0 `RETURN_TYPES`/`RETURN_NAMES`：**已确认 `("VIDEO",)`/`("video",)`**——节点是"保存 + 透传"双职责，与姊妹音频节点 `TE_audio_save_load`（同为 OUTPUT_NODE + 类型透传）模式一致。
+- §3.1 输入排布：`local_video`/`filename_prefix` 在 `required`，`video` 在 `optional`（正文表格按 required/optional 混排的写法已在回填节修正）；`filename_prefix` 默认值 **`TE_MAN_Video`** 实锤（[中]→[高]）。
+- `_VIDEO_EXT_BY_CONTAINER` 完整映射：已确认（见 (c)）。
+- `VALIDATE_INPUTS` 校验范围、`SEARCH_ALIASES` 四项取值、`IS_CHANGED` 返回 `float('nan')`、`_save_video_to_output` 参数表：introspection 不含方法体与更多类属性，仍为未确认。

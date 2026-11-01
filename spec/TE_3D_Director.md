@@ -37,8 +37,8 @@ ComfyUI 节点模块：**TE MAN 3D导演台**（README v3.3 / v3.5 功能）。p
 
 模块级常量（字符串名 + 前端明文互证）：
 - `DEFAULT_PROJECT = '默认项目'`、`DEFAULT_CATEGORY = '3D导演台'`、`DEFAULT_EXAMPLE_PROMPT = '让镜头角度和人物在场景中的站位关系按照 图1 中的设定, 把蓝色人偶替换为 图2 人物,把粉色人偶替换为 图3 人物,双方在城市街道见面'`（前端 JS 常量 `DEFAULT_PROJECT/DEFAULT_CATEGORY/DEFAULT_EXAMPLE_PROMPT` 明文同值，pyd 中三个常量名与值字符串共现）[高]
-- `CAPTURE_FOLDER = 'TE_MAN_3D_Director'` [中]（常量名与值 `TE_MAN_3D_Director` 相邻出现；前端全景上传子目录 `TE_MAN_3D_Director/Panoramas` 与之同根）
-- `ASSET_ROOT_NAME = 'TE_MAN'` [中]（常量名与 `TE_MAN` 字符串共现；为资产素材库根名）
+- `CAPTURE_FOLDER = 'TE_MAN_3D_Director'` [已确认：常量名与值动态实锤（动态回填）；前端全景上传子目录 `TE_MAN_3D_Director/Panoramas` 与之同根]
+- `ASSET_ROOT_NAME = 'TE_MAN'` [已确认：动态实锤（动态回填）；为资产素材库根名]
 - 运行期开关：`_ROUTES_REGISTERED`、`_ROUTE_REGISTER_THREAD_STARTED`（一次性注册标志）[高]
 
 ### 2.3 ComfyUI 节点注册
@@ -55,18 +55,18 @@ ComfyUI 侧本质是"面板入口 + 数据出口"。前端在节点上注入两�
 - 顶部动作按钮 widget：`{name: ACTION_WIDGET, type:'custom', serialize:false}`，label `打开 TE MAN 3D导演台`，高 34px，点击打开 3D 悬浮面板——**这是前端 createDirectorActionWidget 生成的，不属于 pyd INPUT_TYPES** [高]。
 - 序列化属性：`te_3d_director_scene_json` / `te_3d_director_prompt`，并回写 widget `scene_json` / `composition_prompt`（`SCENE_WIDGET`/`PROMPT_WIDGET`、`onSerialize`/`onConfigure` 覆写）[高]。
 
-**输入（INPUT_TYPES.required，推断 [中]）**
+**输入（INPUT_TYPES.required，已确认——运行时 INPUT_TYPES 仅此两项，动态回填）**
 
 | 参数 | 类型 | 默认值 | 依据 |
 |---|---|---|---|
-| `scene_json` | STRING, multiline | `'{}'`（表中 `payload` 后紧跟 `{}`） | 参数名 + tooltip 字符串直接证据 [高]；`{}` 为推测 [中] |
-| `composition_prompt` | STRING, multiline? | `DEFAULT_EXAMPLE_PROMPT` | tooltip：`示例提示词，可根据导演台截图和参考图自行补充修改。` [高] |
-| `filename_stem` | STRING? | 空 → fallback 到时间戳名（字符串 `fallback` 共现） | 参数名存在 [高]；是否为 INPUT_TYPES 项 未确认 |
-| `add_to_library` | BOOLEAN/COMBO? | 未确认 | 参数名存在 [高]；所属（节点输入 / 路由 payload 键 / 内部变量）未确认 |
+| `scene_json` | STRING, multiline, tooltip「3D导演台保存的场景 JSON。通常由前端面板自动写入。」 | **已确认：`'{}'`（动态回填）** | 参数名 + tooltip 字符串直接证据 [高]；默认值动态实锤 |
+| `composition_prompt` | STRING, multiline, 带 `display_name`/`label` = `示例提示词`, tooltip：`示例提示词，可根据导演台截图和参考图自行补充修改。` | **已确认：`DEFAULT_EXAMPLE_PROMPT` 原文（动态回填）** | [高] |
+
+**已确认不存在于 INPUT_TYPES**：`filename_stem`、`add_to_library`（动态回填）——两者是路由 payload/内部变量，不是节点输入；节点亦无 optional / hidden 输入。
 
 **返回**
-- `RETURN_TYPES`/`RETURN_NAMES` 的具体值：**未确认**。描述文本"输出场景 JSON 与构图提示词"暗示返回为场景 JSON 与构图提示词两个字符串（`scene_json`、`composition_prompt` 均有独立字符串）[中]。未发现 torch 痕迹，可排除 IMAGE tensor 返回 [中]。
-- `export_scene` 是否 `async`：未确认（路由协程已确认 async；节点方法仅见 qualname）。
+- **已确认：`RETURN_TYPES = ("STRING", "STRING")`，`RETURN_NAMES = ("scene_json", "示例提示词")`（动态回填）**——与描述文本"输出场景 JSON 与构图提示词"吻合；第二个口名是 `示例提示词`（与 composition_prompt 参数的 display_name 同名），非 `composition_prompt`。
+- `export_scene` 是否 `async`：未确认（路由协程已确认 async；节点方法仅见 qualname；introspection 未采集协程标志）。
 
 ### 3.2 路由 `POST /te_3d_director/capture`（te_3d_director_capture）
 
@@ -194,9 +194,46 @@ await api.fetchApi('/te_3d_director/capture', {method:'POST',
 ```
 
 ### 6.6 未确认事项汇总
-- `RETURN_TYPES`/`RETURN_NAMES` 具体值（推断为场景 JSON + 构图提示词两字符串）。
-- `export_scene` 是否 async、内部是否做除透传/组装外的工作。
-- `filename_stem`、`add_to_library` 究竟是节点 INPUT_TYPES 输入还是路由/内部变量。
-- `'{}'` 是否为 `scene_json` 默认值；`CAPTURE_FOLDER`/`ASSET_ROOT_NAME` 的确切取值（依赖常量池指针指向，静态字符串仅给出候选值）。
-- `_target_dir_for_payload` 中 save_mode 分支值（前端仅用 `'canvas'`/`'library'` 两种；pyd 内 `'input'` 字符串的用途未确认）。
-- 资产库索引文件的写入方（推测由资产库核心模块持有，`_asset_record` 只产出记录）。
+- `RETURN_TYPES`/`RETURN_NAMES` 具体值 —— **已确认：`("STRING", "STRING")` / `("scene_json", "示例提示词")`（动态回填，见 §3.1）**。
+- `export_scene` 是否 async、内部是否做除透传/组装外的工作。（introspection 未采集协程标志，保持未确认）
+- `filename_stem`、`add_to_library` 究竟是节点 INPUT_TYPES 输入还是路由/内部变量 —— **已确认：两者都不在 INPUT_TYPES 中，为路由 payload/内部变量（动态回填）**。
+- `'{}'` 是否为 `scene_json` 默认值 —— **已确认：是（动态回填）**；`CAPTURE_FOLDER`/`ASSET_ROOT_NAME` 的确切取值 —— **已确认：`'TE_MAN_3D_Director'` / `'TE_MAN'`（动态回填）**。
+- `_target_dir_for_payload` 中 save_mode 分支值（前端仅用 `'canvas'`/`'library'` 两种；pyd 内 `'input'` 字符串的用途未确认）。（introspection 不覆盖路由内部，保持未确认）
+- 资产库索引文件的写入方（推测由资产库核心模块持有，`_asset_record` 只产出记录）。（保持未确认）
+
+## 7. 动态 introspection 回填（Windows+ComfyUI 真机实测）
+
+> 数据来源：GitHub Actions Windows Server 2025 + ComfyUI（Python 3.13.16）真实环境 import 后的自省结果；运行时模块显示为 `custom_nodes.TE_image.TE_3D_Director`（`TE_image` 为插件原名），模块文件 `D:\a\_temp\ComfyUI\custom_nodes\TE_MAN\TE_3D_Director.pyd`。本节所有值均为运行时实锤。
+
+### 7.1 节点 INPUT_TYPES 全表（实锤）
+
+#### TE_3D_Director（TEMan3DDirectorNode）
+
+注册元数据：`FUNCTION = "export_scene"`、`CATEGORY = "TE MAN/3D"`、`OUTPUT_NODE = True`、`RETURN_TYPES = ["STRING", "STRING"]`、`RETURN_NAMES = ["scene_json", "示例提示词"]`；无 IS_CHANGED / VALIDATE_INPUTS / on_execute / check_lazy_status。节点 DESCRIPTION（原文）："打开 TE MAN 3D导演台，编辑角色、道具、机位和姿势，并输出场景 JSON 与构图提示词。"显示名（node_display_name_mappings）：`TE MAN 3D导演台`。
+
+**required**：
+
+| 参数名 | 类型 | 选项 / 约束 | 默认值 | tooltip（原文摘要） |
+|---|---|---|---|---|
+| `scene_json` | STRING, multiline | — | `{}` | 3D导演台保存的场景 JSON。通常由前端面板自动写入。 |
+| `composition_prompt` | STRING, multiline（带 `display_name: 示例提示词`、`label: 示例提示词`） | — | 让镜头角度和人物在场景中的站位关系按照 图1 中的设定, 把蓝色人偶替换为 图2 人物,把粉色人偶替换为 图3 人物,双方在城市街道见面 | 示例提示词，可根据导演台截图和参考图自行补充修改。 |
+
+**optional / hidden**：无。
+
+运行时模块级常量实锤：`ASSET_ROOT_NAME = "TE_MAN"`、`CAPTURE_FOLDER = "TE_MAN_3D_Director"`、`DEFAULT_CATEGORY = "3D导演台"`、`DEFAULT_PROJECT = "默认项目"`、`DEFAULT_EXAMPLE_PROMPT = "让镜头角度和人物在场景中的站位关系按照 图1 中的设定, 把蓝色人偶替换为 图2 人物,把粉色人偶替换为 图3 人物,双方在城市街道见面"`（§2.2 三个 [中] 常量全部转实锤）；`_ROUTES_REGISTERED = False`（introspection 时刻路由尚未注册）、`_ROUTE_REGISTER_THREAD_STARTED = True`（后台注册线程已启动——与 §2.2 `_register_routes_when_ready` 的 daemon 线程机制吻合）。
+
+### 7.2 "未确认"项核对结果
+
+| 原文位置 | 结论 |
+|---|---|
+| §2.2 `CAPTURE_FOLDER` / `ASSET_ROOT_NAME` 取值 [中] | **已确认：`"TE_MAN_3D_Director"` / `"TE_MAN"`（动态回填）** |
+| §3.1 INPUT_TYPES 仅 scene_json + composition_prompt？ | **已确认：是，required 恰此两项，无 optional/hidden（动态回填）**；`filename_stem`、`add_to_library` 均非节点输入（属路由 payload/内部变量） |
+| §3.1 `scene_json` 默认 `'{}'` [中] | **已确认：`'{}'`（动态回填）** |
+| §3.1 `composition_prompt` 默认与 label | **已确认：默认 = DEFAULT_EXAMPLE_PROMPT 原文；`display_name`/`label` = `示例提示词`（动态回填）** |
+| §3.1 `RETURN_TYPES`/`RETURN_NAMES` | **已确认：`["STRING", "STRING"]` / `["scene_json", "示例提示词"]`（动态回填）**——两字符串输出，无 IMAGE |
+| §3.1 `OUTPUT_NODE` Truthy [高] | **已确认：True（动态回填）** |
+| §3.1 `export_scene` 是否 async | introspection 未采集协程标志，保持未确认 |
+| §6.6 `_target_dir_for_payload` save_mode 分支 / `'input'` 字符串用途 | introspection 不覆盖路由内部逻辑，保持未确认 |
+| §6.6 资产库索引文件写入方 | 保持未确认（跨模块） |
+
+另注：节点主执行 `export_scene` 本体在 introspection 中无 method_docs，内部行为仍是黑盒（pyd 很薄、透传为主的基本判断不受影响）。

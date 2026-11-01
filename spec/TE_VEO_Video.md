@@ -18,7 +18,8 @@
   - 图像编码：`_scale_image_tensor_to_total_pixels_if_needed`（内部符号 `resolution_steps`、`_OFFICIAL_SCALE_METHOD`、`_MAX_INPUT_IMAGE_MEGAPIXELS`、`common_upscale`、`nearest-exact` [高]）、`_encode_image_batch_to_data_urls`、`_encode_single_image_to_data_url`、`_encode_single_image_to_png_file_part`
   - 模型/尺寸归一化：`_normalize_output_profile(value?)`、`_normalize_model_variant`、`_resolve_video_model(output_profile?, model_variant?)`、`_resolve_video_size(aspect_ratio?, ...)`、`_resolve_720p_video_size`、`_is_auto_video_option`、`_summarize_for_log`
 - 类 `BananaTEVeoVideoNode`：唯一节点类，方法 `INPUT_TYPES`、`_resolve_key_and_url`、`generate_video`（含子生成器 genexpr）[高]。
-- 模块常量 [高，名称]：`_FAST_MODEL_NAME_720P / _FAST_MODEL_NAME_1080P / _FAST_MODEL_NAME_4K / _FAST_MODEL_NAME_1080P_FL / _FAST_MODEL_NAME_4K_FL`、`_LITE_MODEL_NAME / _LITE_MODEL_VARIANT`、`_DEFAULT_MODEL_VARIANT / _DEFAULT_OUTPUT_PROFILE`、`_MODEL_VARIANT_OPTIONS / _OUTPUT_PROFILE_OPTIONS / _ROUTE_OPTIONS`、`CONFIG_MANAGER`、`MODULE_DIR`、`_HAS_COMFY_VIDEO`。
+- 模块常量 [高，名称]：`_FAST_MODEL_NAME_720P / _FAST_MODEL_NAME_1080P / _FAST_MODEL_NAME_4K / _FAST_MODEL_NAME_1080P_FL / _FAST_MODEL_NAME_4K_FL`、`_LITE_MODEL_NAME / _LITE_MODEL_VARIANT`、`_DEFAULT_MODEL_VARIANT / _DEFAULT_OUTPUT_PROFILE`、`_MODEL_VARIANT_OPTIONS / _OUTPUT_PROFILE_OPTIONS / _ROUTE_OPTIONS`、`CONFIG_MANAGER`、`MODULE_DIR`、`_HAS_COMFY_VIDEO`、`_MAX_INPUT_IMAGE_MEGAPIXELS`、`_OFFICIAL_SCALE_METHOD`。
+  - **常量值已确认（动态回填）**：`_DEFAULT_MODEL_VARIANT = "veo 3.1 fast"`、`_DEFAULT_OUTPUT_PROFILE = "720p"`、`_MODEL_VARIANT_OPTIONS = ["veo 3.1 fast", "veo3.1-lite", "omni-flash"]`、`_OUTPUT_PROFILE_OPTIONS = ["720p", "1080p"]`、`_ROUTE_OPTIONS = ["线路1", "线路2"]`、`_LITE_MODEL_VARIANT = "veo3.1-lite"`、`_MAX_INPUT_IMAGE_MEGAPIXELS = 1.0`、`_OFFICIAL_SCALE_METHOD = "nearest-exact"`、`_HAS_COMFY_VIDEO = True`。
 - ComfyUI 节点注册 [高]：`NODE_CLASS_MAPPINGS` 键 `TE_image_pro_te_veo_video`，显示名 `TE MAN VEO Video`，`CATEGORY: TE MAN/Veo`，`FUNCTION: generate_video`，`RETURN_TYPES / RETURN_NAMES / OUTPUT_NODE` 字符串存在 [高]。
 
 ## 3. 与 api_client 的协议层关系（重点）
@@ -45,41 +46,42 @@ tooltip 原文 `选择要使用的视频生成模型。` [高]。出现的模型
 | `veo3.1-lite` | `_LITE_MODEL_NAME` | lite 变体；`ignores_output_profile`（不使用清晰度档 [中]） |
 | `omni-flash` | `omni_flash-10s` | omni-flash 线路2 按 `omni_flash-10s JSON 格式提交`；固定 10 秒（`duration=10` 片段 [中]） |
 
-配套常量 `_FAST_MODEL_NAME_720P/1080P/4K/1080P_FL/4K_FL` [高，名称]：fast 模型按清晰度档解析出的提交模型名候选 `veo_3_1-fast / veo_3_1-fast-hd / veo_3_1-fast-4K / veo_3_1-fast-fl-hd / veo_3_1-fast-4K-fl` [高，字符串]；**档位 → 模型名的精确映射未确认**（`fl` 后缀用途未确认）。
+配套常量 `_FAST_MODEL_NAME_720P/1080P/4K/1080P_FL/4K_FL` [高，名称] —— **档位 → 模型名的映射已确认（动态回填）：`_FAST_MODEL_NAME_720P = "veo3.1-fast"`、`_FAST_MODEL_NAME_1080P = "veo_3_1-fast-hd"`、`_FAST_MODEL_NAME_4K = "veo_3_1-fast-4K"`、`_FAST_MODEL_NAME_1080P_FL = "veo_3_1-fast-fl-hd"`、`_FAST_MODEL_NAME_4K_FL = "veo_3_1-fast-4K-fl"`**（`fl` 后缀疑为 first/last 首尾帧变体，仍属推断）。
 
 ### 4.2 清晰度档（output_profile，下拉 `_OUTPUT_PROFILE_OPTIONS`）
 
-tooltip 原文 `清晰度（默认 720p；1080p 改走 multipart + input_reference[] 接口。` [高，后半句紧邻拼接]。`720p / 1080p / 1080P / 4K` 字面量均出现 [高]；`_DEFAULT_OUTPUT_PROFILE` 疑为 `720p` [中]。归一化 `_normalize_output_profile`，分支标志 `uses_multipart_profile / ignores_output_profile / requested_output_profile / effective_output_profile` [高，名称]。分辨率档位与请求方式的关联（1080p→multipart，720p→JSON data URL）为 tooltip 直接陈述 [高]；**4K 档是否也走 multipart 未确认**。
+tooltip 原文 `清晰度（默认 720p；1080p 改走 multipart + input_reference[] 接口。` [高，后半句紧邻拼接]。`720p / 1080p / 1080P / 4K` 字面量均出现 [高] —— **`_DEFAULT_OUTPUT_PROFILE` 已确认 = `"720p"`（动态回填）**；`_OUTPUT_PROFILE_OPTIONS = ["720p", "1080p"]`（已确认，4K 不是 UI 选项）。归一化 `_normalize_output_profile`，分支标志 `uses_multipart_profile / ignores_output_profile / requested_output_profile / effective_output_profile` [高，名称]。分辨率档位与请求方式的关联（1080p→multipart，720p→JSON data URL）为 tooltip 直接陈述 [高]；**4K 档是否也走 multipart 未确认**（4K 仅作为 fast 模型名后缀常量出现，非清晰度 UI 档位）。
 
 ### 4.3 线路（route，下拉 `_ROUTE_OPTIONS`）
 
-tooltip 原文 `选择接口线路，默认使用线路1；如果某个线路不可用，可以切换其他线路尝试。` [高]。选项标签 `线路1 / 线路2 / 线路3` [高]；另有回退提示 ` (当前模型不使用该线路，已按线路1处理)` 与 ` (omni-flash 固定按 …方式提交)` [高]。内部标志：`route_choice / route_effective / uses_fast_route2 / uses_omni_route2` [高，名称]。
+tooltip 原文 `选择接口线路，默认使用线路1；如果某个线路不可用，可以切换其他线路尝试。` [高]。选项标签 `线路1 / 线路2 / 线路3` [高] —— **已确认：`_ROUTE_OPTIONS = ["线路1", "线路2"]`，UI 仅暴露两档，`线路3` 标签串仍在二进制中但不在下拉选项里（动态回填）**；另有回退提示 ` (当前模型不使用该线路，已按线路1处理)` 与 ` (omni-flash 固定按 …方式提交)` [高]。内部标志：`route_choice / route_effective / uses_fast_route2 / uses_omni_route2` [高，名称]。
 
 - **线路1（默认）**：`POST /v1/videos` JSON 提交 + `GET /v1/videos/{task_id}` 轮询（docstring 原文）[高]；图像以 data URL / multipart 提交（见 4.6）
 - **线路2**：veo fast → `veo_3_1-fast` JSON 格式（首帧/首尾帧/参考图统一走 `input_reference` 字段，日志 `veo 3.1 fast 线路2模式: 首帧按 input_reference 参考图提交`、`…首尾帧按 input_reference 多参考图提交`、`…参考图生视频，input_reference=…`、`…文生视频` [高]）；omni-flash → `omni_flash-10s` JSON 格式（`firstFrameBase64 / lastFrameBase64 / referenceImagesBase64` 字段 [高]）。线路2 限制：`线路2 images 最多只支持 3 张`、`veo 3.1 fast 线路2接口实际只接受单个 input_reference 字符串，已只使用第 1 张参考图，忽略其余 …`、`omni-flash 线路2暂不支持首帧/首尾帧模式，请改用参考图输入 reference_image_1/2/3`、`omni-flash 不支持首帧/首尾帧模式，请改用文生视频或参考图模式` [高]
-- **线路3**：仅存在标签 `线路3` [高]；其端点/格式/适用模型**未确认**
+- **线路3**：仅存在标签 `线路3` [高] —— **已确认：运行时 UI 不暴露线路3（`_ROUTE_OPTIONS` 只含线路1/线路2），线路3 为已废弃/预留路径，其端点与格式在运行时不可达（动态回填）**；端点/格式本身仍未证实（introspection 不含函数体）。
 
-### 4.4 输入参数（INPUT_TYPES 形参名 = 字符串证据 [高]；类型/默认值除注明外 [中]）
+### 4.4 输入参数（INPUT_TYPES 形参名 = 字符串证据 [高]；类型/默认值已由 §8.2 动态回填实锤）
 
 - `prompt`（STRING, multiline）：tooltip 原文 `用于生成视频的提示词` [高]；空值报 `请输入 prompt` [高]；默认示例文本 `一只可爱的小狗在花园里玩耍` [高]
 - `api_key`：tooltip 原文 `API Key；留空则读取 config.ini` [高]；空 config 报 `请在 config.ini 中配置 API Key 或在节点中填写` [高]
 - `api_url`：tooltip 原文（字节级原样）`服务地址不要带 /v1/videos）`（存在不成对的 `）`，源码疑为拼接/笔误 [高]）；空 config 报 `请在 config.ini 中配置 API URL 或在节点中填写` / `未配置有效的 API URL` [高]
-- `model_variant`（下拉）：`选择要使用的视频生成模型。`（见 4.1）
-- `output_profile`（清晰度，下拉）：见 4.2
-- `route`（线路选择，下拉）：见 4.3
-- `aspect_ratio`：tooltip 原文 `视频比例，对应接口参数 aspectRatio` [高]；合法值 `16:9 / 9:16`（ASCII 直证 [高]；`1:1` 未出现，**是否支持未确认**）；请求体字段 `aspectRatio` [高]
-- 首尾帧（IMAGE，可选）：`first_frame_image`、`last_frame_image` [高]；tooltip 线索 `首帧参考`、`尾帧参考。必须和首帧参考一起使用，不能单独使用`、`尾帧参考不能单独使用，请同时接入首帧参考` [高]；`，不支持首尾帧`（拼在某模型的能力说明里，归属未确认 [高，片段]）。编码为 `first_frame.png / last_frame.png` 文件部件（`<file:first_frame.png>`、`<file:last_frame.png>` 日志占位 [高]）
+- `model_variant`（下拉）：`选择要使用的视频生成模型。`（见 4.1）—— **已确认：UI 形参名为 `模型选择`，枚举 `["veo 3.1 fast", "veo3.1-lite", "omni-flash"]`，默认 `veo 3.1 fast`（动态回填）**
+- `output_profile`（清晰度，下拉）：见 4.2 —— **已确认：UI 形参名为 `清晰度`，枚举 `["720p", "1080p"]`，默认 `720p`（动态回填）**
+- `route`（线路选择，下拉）：见 4.3 —— **已确认：UI 形参名为 `线路选择`，枚举 `["线路1", "线路2"]`，默认 `线路1`（动态回填）**
+- `aspect_ratio`：tooltip 原文 `视频比例，对应接口参数 aspectRatio` [高] —— **已确认：枚举 `["16:9", "9:16"]`，默认 `16:9`，required 分组（动态回填）**；请求体字段 `aspectRatio` [高]
+- 首尾帧（IMAGE，可选）：`first_frame_image`（tooltip `首帧参考。接入后不能再接多图参考输入`）、`last_frame_image`（tooltip `尾帧参考。必须和首帧参考一起使用，不能单独使用`）[高]；`尾帧参考不能单独使用，请同时接入首帧参考` [高]；`，不支持首尾帧`（拼在某模型的能力说明里，归属未确认 [高，片段]）。编码为 `first_frame.png / last_frame.png` 文件部件（`<file:first_frame.png>`、`<file:last_frame.png>` 日志占位 [高]）
 - 多图参考（IMAGE，可选 ×3）：`reference_image_1 / reference_image_2 / reference_image_3`，tooltip `多图参考 1/2/3` [高]；约束原文：`参考图最多只支持 3 张`、`参考图模式下至少需要接入 1 张参考图`、`多图参考模式与首帧/尾帧模式不能同时使用，请二选一`、`接入后不能再接多图参考输入`、`只接这一路时也会走参考图模式`、`… 只支持 1 张图，当前是 …`、`不支持的 IMAGE 维度: …`（tensor 维度错误）[高]。模式判定符号：`has_first_frame / has_last_frame / has_reference_images / text_to_video / single_reference / multi_reference / first_last_frame / first_frame / reference_inputs / input_reference_values` [高，名称]
-- `seed`（INT）：类型字符串 `INT` 与形参 `seed` 紧邻 `duration` [高，片段]；tooltip/默认值未确认
-- `duration`：形参字符串 `duration` + 片段 `，duration=10`（omni-flash 固定 10 秒语境）[高，名称；用户可调范围未确认]
-- `poll_interval_s`：tooltip 原文 `轮询间隔（秒）` [高]；默认值未确认
-- `bypass_proxy`（BOOLEAN）：tooltip 原文 `需要忽略系统代理/梯子时开启` [高]；类型 `BOOLEAN` 直证 [高]
+- `seed`（INT，optional）：**已确认：默认 `-1`，min `-1` / max `2147483647`，`control_after_generate` 开启，tooltip `仅供 ComfyUI 工作流使用；不会写入请求体`（动态回填）**
+- `duration`：**已确认：duration 不是 UI 输入**——INPUT_TYPES 无 duration 参数，`，duration=10` 为 omni-flash 内部固定值（动态回填）
+- `poll_interval_s`（optional）：**已确认：INT，默认 `5`，min 2 / max 60（动态回填）**
+- `绕过代理`（正文原记 `bypass_proxy`，BOOLEAN，optional）：**已确认：UI 形参名 `绕过代理`，默认 `false`（动态回填）**；类型 `BOOLEAN` 直证 [高]
 - `control_after_generate`：ComfyUI seed 配件约定 [高，名称]；`仅供 ComfyUI 工作流使用；不会写入请求体`（tooltip 原文 [高]）
 - 提示：`… 没有可用图像`（空图输入报错片段 [高]）；`缺少图像依赖（numpy）: …` [高]
+- **required 分组实锤（动态回填）**：仅 `prompt / api_key / api_base_url / aspect_ratio` 四项；其余（seed、三路参考图、首尾帧、poll_interval_s、绕过代理、清晰度、模型选择、线路选择）全部为 optional。`api_base_url` 默认空串（VEO 无硬编码默认 URL，与 Jimeng 的 `https://tem.588186.xyz` 不同）。
 
 ### 4.5 返回
 
-- `RETURN_TYPES / RETURN_NAMES / OUTPUT_NODE` 存在 [高]。推断返回 **VIDEO 类型** [中]：类型串 `VIDEO`、`comfy.comfy_types`、`comfy_api.input_impl`、`VideoFromFile`、`get_stream_source`、`_HAS_COMFY_VIDEO`（未装 ComfyUI 视频类型时的回退开关，回退值未确认）。保存线索 [中]：`te_veo_video_`（文件名前缀）、`.mp4`、`subfolder`、`filename`、`save_to`、`视频已保存: …`；`output_codec / output_format / codec / animated` 疑为 `save_to(...)` 的保存参数 [低]。
+- **已确认（动态回填）：`RETURN_TYPES = ["VIDEO"]`，`RETURN_NAMES = ["video"]`（单输出），`OUTPUT_NODE = True`**。类型串 `VIDEO`、`VideoFromFile`、`get_stream_source`、`_HAS_COMFY_VIDEO = True`（运行环境装有 ComfyUI 视频类型）。保存线索 [中]：`te_veo_video_`（文件名前缀）、`.mp4`、`subfolder`、`filename`、`save_to`、`视频已保存: …`；`output_codec / output_format / codec / animated` 疑为 `save_to(...)` 的保存参数 [低]。
 - 日志行（Mode/Model/Size/Task ID/Aspect Ratio）[高]：`模式: 文生视频 | 首帧生视频 | 首尾帧生视频`、`模型选择: …`、`线路选择: …`、`清晰度: …`、`Size: …`、`Task ID: …`、`Aspect Ratio: …`、`API: …`、`API Key: …`（打码）、`API URL: [已脱敏]`、`<data-image len=…>`（日志截断占位）。
 
 ### 4.6 关键行为（generate_video 流程，按字符串拓扑 [高/中]）
@@ -208,3 +210,83 @@ Keep downloaded API videos usable when PyAV cannot stream-copy them.
 - 编译源：`F:\ComfyUI_portable_TE_v260130\ComfyUI\custom_nodes\TE_image\source_py_backup\TE_VEO_Video.c` [高]
 - 交叉引用模块：config_manager（`load_api_key / get_effective_api_base_url / sanitize_api_key / ConfigManager / CONFIG_MANAGER` [高]）、image_codec（`encode_numpy_image_to_api_file_part` [高]）、logger [高]；**不引用 api_client / task_runner**（0 字节命中 [高]）
 - 前端联动：`web/js/` 中未发现 `te_veo` 引用（grep 无命中 [高]）—— 与 grok/jimeng 不同，该节点无专属前端扩展
+
+## 8. 动态 introspection 回填（Windows+ComfyUI 真机实测）
+
+> 数据来源：GitHub Actions 真实环境（`Windows-2025Server-10.0.26100`，Python 3.13.16，ComfyUI 目录 `D:\a\_temp\ComfyUI`，插件包 `custom_nodes/TE_MAN`）运行时 introspection 导出（`te_man_introspection.json`）。
+> **包装层说明（重点）**：TE_VEO_Video.pyd 的 `BananaTEVeoVideoNode` 是 pyd 基类；运行时 ComfyUI 实际注册的类是明文包装层 `Grok_Safe_PY.py` 中的 **`TE_MAN.Grok_Safe_PY.BananaTEVeoVideoSafePyNode`**（SafePy 类包装 pyd 基类）。`Grok_Safe_PY` 模块自身运行时 `NODE_CLASS_MAPPINGS` 为空 dict，最终注册映射为 `TE_image_pro_te_veo_video → BananaTEVeoVideoSafePyNode`。下表即包装层最终暴露的参数表（SafePy 透传基类 INPUT_TYPES，无增减）。
+
+### 8.1 节点注册（运行时实锤）
+
+| 项 | 值 |
+|---|---|
+| 注册名 | `TE_image_pro_te_veo_video` |
+| 运行时类 | `TE_MAN.Grok_Safe_PY.BananaTEVeoVideoSafePyNode`（包装 pyd 基类 `custom_nodes.TE_image.TE_VEO_Video.BananaTEVeoVideoNode`） |
+| 显示名 | `TE MAN VEO Video` |
+| `FUNCTION` | `generate_video` |
+| `CATEGORY` | `TE MAN/Veo` |
+| `OUTPUT_NODE` | `True` |
+| 节点 doc | 无（`doc = null`，SafePy 包装类未透出基类 docstring） |
+
+pyd 模块常量实锤（`TE_MAN.TE_VEO_Video`，module file `TE_VEO_Video.pyd`）：
+
+```
+NODE_CLASS_MAPPINGS        = {TE_image_pro_te_veo_video: BananaTEVeoVideoNode}   # pyd 侧原始映射
+NODE_DISPLAY_NAME_MAPPINGS = {TE_image_pro_te_veo_video: TE MAN VEO Video}
+MODULE_DIR                 = D:\a\_temp\ComfyUI\custom_nodes\TE_MAN
+_HAS_COMFY_VIDEO           = True
+_DEFAULT_MODEL_VARIANT     = "veo 3.1 fast"
+_DEFAULT_OUTPUT_PROFILE    = "720p"
+_MODEL_VARIANT_OPTIONS     = ["veo 3.1 fast", "veo3.1-lite", "omni-flash"]
+_OUTPUT_PROFILE_OPTIONS    = ["720p", "1080p"]
+_ROUTE_OPTIONS             = ["线路1", "线路2"]
+_LITE_MODEL_NAME           = "veo3.1-lite"
+_LITE_MODEL_VARIANT        = "veo3.1-lite"
+_FAST_MODEL_NAME_720P      = "veo3.1-fast"          # 720p JSON 档
+_FAST_MODEL_NAME_1080P     = "veo_3_1-fast-hd"      # 1080p 档（multipart）
+_FAST_MODEL_NAME_4K        = "veo_3_1-fast-4K"      # 4K（非 UI 档位）
+_FAST_MODEL_NAME_1080P_FL  = "veo_3_1-fast-fl-hd"   # fl = 首尾帧变体（推断）
+_FAST_MODEL_NAME_4K_FL     = "veo_3_1-fast-4K-fl"
+_MAX_INPUT_IMAGE_MEGAPIXELS = 1.0
+_OFFICIAL_SCALE_METHOD     = "nearest-exact"
+```
+
+### 8.2 INPUT_TYPES 全表（运行时实锤，包装层最终暴露参数表）
+
+**required：**
+
+| 参数 | 类型 | 枚举/约束 | 默认值 | tooltip 摘要 |
+|---|---|---|---|---|
+| `prompt` | STRING | multiline | `一只可爱的小狗在花园里玩耍` | 用于生成视频的提示词 |
+| `api_key` | STRING | 单行 | `""` | API Key；留空则读取 config.ini |
+| `api_base_url` | STRING | 单行 | `""`（空 = 走 config.ini） | 服务地址不要带 /v1/videos） |
+| `aspect_ratio` | ["16:9","9:16"] | 下拉 | `"16:9"` | 视频比例，对应接口参数 aspectRatio |
+
+**optional：**
+
+| 参数 | 类型 | 枚举/约束 | 默认值 | tooltip 摘要 |
+|---|---|---|---|---|
+| `seed` | INT | min -1 / max 2147483647，`control_after_generate` 开启 | `-1` | 仅供 ComfyUI 工作流使用；不会写入请求体 |
+| `reference_image_1` | IMAGE | — | — | 多图参考 1。只接这一路时也会走参考图模式 |
+| `reference_image_2` | IMAGE | — | — | 多图参考 2 |
+| `reference_image_3` | IMAGE | — | — | 多图参考 3 |
+| `first_frame_image` | IMAGE | — | — | 首帧参考。接入后不能再接多图参考输入 |
+| `last_frame_image` | IMAGE | — | — | 尾帧参考。必须和首帧参考一起使用，不能单独使用 |
+| `poll_interval_s` | INT | min 2 / max 60 | `5` | 轮询间隔（秒） |
+| `绕过代理` | BOOLEAN | — | `false` | 需要忽略系统代理/梯子时开启 |
+| `清晰度` | ["720p","1080p"] | 下拉 | `"720p"` | 默认 720p；1080p 改走 multipart + input_reference[] 接口。 |
+| `模型选择` | ["veo 3.1 fast","veo3.1-lite","omni-flash"] | 下拉 | `veo 3.1 fast` | 选择要使用的视频生成模型。 |
+| `线路选择` | ["线路1","线路2"] | 下拉 | `线路1` | 选择接口线路，默认使用线路1；如果某个线路不可用，可以切换其他线路尝试。 |
+
+**未暴露项修正**：`duration` 不是 UI 输入（omni-flash 内部固定 `duration=10`）；`1:1` 比例不支持（枚举仅 16:9/9:16，原"是否支持未确认"关闭）；UI 形参名修正：`model_variant`→`模型选择`、`output_profile`→`清晰度`、`route`→`线路选择`、`bypass_proxy`→`绕过代理`、`api_url`→`api_base_url`。
+
+### 8.3 返回值（运行时实锤）
+
+`RETURN_TYPES = ["VIDEO"]`，`RETURN_NAMES = ["video"]`，`OUTPUT_NODE = True`。单输出节点（与 Jimeng/HappyH 的四输出不同）。
+
+### 8.4 回填后仍未确认项
+
+- 线路3 的端点/提交格式——UI 不可达（见 §4.3 修正），函数体不可见，永久存疑但无运行时影响。
+- `fl` 后缀模型名（`veo_3_1-fast-fl-hd / veo_3_1-fast-4K-fl`）的精确触发条件（疑首尾帧模式专用）。
+- omni-flash 对应的内部模型名（正文记 `omni_flash-10s` [高]，introspection 常量表未含此值，维持字符串证据结论）。
+- `_HAS_COMFY_VIDEO=False` 时的回退返回形态——真机环境恒为 True，未触发。

@@ -49,14 +49,14 @@
 
 | 常量 | 推断值 | 依据 | 置信度 |
 |---|---|---|---|
-| `TE_CUSTOM_SAVE_IMAGE_TYPE` | `'te_custom_save'` | 前端 `save_image_with_output_clipspace.js` 中明文 `TE_CUSTOM_SAVE_IMAGE_TYPE='te_custom_save'`；pyd 内两字符串同在 | [高] |
-| `SERIALIZED_PROMPT_KEY` | `'te_saved_prompt_text'` | 前端同文件 `te_saved_prompt_text`；pyd 内字符串在 `get_serialized_node_prompt_text` 附近 | [高] |
-| `SERIALIZED_IMAGES_KEY` | `'te_saved_preview_images'` | 前端同文件 `te_saved_preview_images`；同类节点 `save_video_with_frame_capture.js` 明文 `SERIALIZED_PROMPT_KEY='te_saved_prompt_text'` 佐证命名模式 | [高] |
-| `TE_PROMPT_SOURCE_CLASSES` | 含 `('TE_image_pro_special_async2','TE_image_pro_banana','TE_image_pro_gpt_image_2','TE_image_pro_grok_image')` 中的类名 | 四个类名字符串全部存在于 pyd，且分别在对应生成器 pyd（GPT_Image_2_Generator/Gemini_Imagen_Generator/Grok_Image_Generator 等）中也出现，是插件内提示词输出节点的注册类名 | [中]（是否为该元组全部成员未确认） |
-| `TE_PROMPT_METADATA_KEY` | 值未确认（可能为 `'parameters'`，即 ComfyUI PNG 元数据键；`parameters` 字符串在 pyd 中存在） | [中/低] |
-| `TE_CUSTOM_SAVE_ALLOWED_EXTENSIONS` | 推断含 `.png .jpg .jpeg .webp .gif .bmp` | 扩展名字符串在 pyd 中成组出现；另有 `MPO`（PIL 多图 JPEG 格式名）——是否属该集合未确认 | [中] |
-| `NODE_IMAGE_CACHE` | 模块级图片缓存字典 | 名符在，配合 `stat`/`st_mtime_ns`/`st_size`/`st_mtime` 冷却失效线索 | [高] |
-| `PROMPT_UI_MAX_CHARS` | 数值未确认 | 名符在，配合截断消息 | [高]（值 [未确认]） |
+| `TE_CUSTOM_SAVE_IMAGE_TYPE` | `'te_custom_save'` | 前端 `save_image_with_output_clipspace.js` 中明文 `TE_CUSTOM_SAVE_IMAGE_TYPE='te_custom_save'`；pyd 内两字符串同在 | **已确认：`'te_custom_save'`（动态回填）** |
+| `SERIALIZED_PROMPT_KEY` | `'te_saved_prompt_text'` | 前端同文件 `te_saved_prompt_text`；pyd 内字符串在 `get_serialized_node_prompt_text` 附近 | **已确认：`'te_saved_prompt_text'`（动态回填）** |
+| `SERIALIZED_IMAGES_KEY` | `'te_saved_preview_images'` | 前端同文件 `te_saved_preview_images`；同类节点 `save_video_with_frame_capture.js` 明文 `SERIALIZED_PROMPT_KEY='te_saved_prompt_text'` 佐证命名模式 | **已确认：`'te_saved_preview_images'`（动态回填）** |
+| `TE_PROMPT_SOURCE_CLASSES` | 含 `('TE_image_pro_special_async2','TE_image_pro_banana','TE_image_pro_gpt_image_2','TE_image_pro_grok_image')` 中的类名 | 四个类名字符串全部存在于 pyd，且分别在对应生成器 pyd（GPT_Image_2_Generator/Gemini_Imagen_Generator/Grok_Image_Generator 等）中也出现，是插件内提示词输出节点的注册类名；运行时佐证：这 4 个名字均为真机已注册节点（`module=TE_MAN.Grok_Safe_PY`，类名分别为 `BananaGeminiAsyncSafePyNode`/`BananaGeminiImageSafePyNode`/`TEGPTImage2SafePyNode`/`BananaGrokImageSafePyNode`，均为 `FUNCTION=generate_images`、`RETURN_TYPES=[IMAGE, STRING]`）（动态回填） | [中]（是否为该元组全部成员未确认；动态回填负证据：该元组未出现在模块级常量表——属类属性/函数局部，值仍未实测） |
+| `TE_PROMPT_METADATA_KEY` | **`'te_prompt_text'`**（动态回填实锤，修正原 `'parameters'` 推断；`parameters` 字符串更可能是读取 ComfyUI 标准元数据的兜底键） | 运行时模块常量表实测值 | **已确认（动态回填）** |
+| `TE_CUSTOM_SAVE_ALLOWED_EXTENSIONS` | 推断含 `.png .jpg .jpeg .webp .gif .bmp` | 扩展名字符串在 pyd 中成组出现；另有 `MPO`（PIL 多图 JPEG 格式名）——是否属该集合未确认；动态回填负证据：未出现在模块级常量表（类属性/函数局部，值仍未实测） | [中] |
+| `NODE_IMAGE_CACHE` | 模块级图片缓存字典 | 名符在，配合 `stat`/`st_mtime_ns`/`st_size`/`st_mtime` 冷却失效线索；运行时实测确为模块级 `dict`（快照时为空 `{}`）（动态回填） | **已确认（动态回填）** |
+| `PROMPT_UI_MAX_CHARS` | `4000`（动态回填实锤） | 名符在，配合截断消息；运行时模块常量表实测 | **已确认：`4000`（动态回填）** |
 
 ## 3. 内部接口（支撑库，非节点）
 
@@ -197,3 +197,37 @@ _is_absolute_path → _normalize_file_path → _has_supported_image_extension
 - `README.md` "首创保存图像节点支持自定义保存路径"："填写绝对路径时，可直接保存到计算机内任意指定目录。留空时仍保存到 ComfyUI 默认 `output`。" —— 与本库 `_is_absolute_path`/`resolve_custom_save_image_path` 行为吻合。
 
 **未确认项汇总**：`TE_PROMPT_METADATA_KEY` 的具体值、`TE_PROMPT_SOURCE_CLASSES` 元组是否完整为上述 4 类、`TE_CUSTOM_SAVE_ALLOWED_EXTENSIONS` 是否含 `MPO`、`PROMPT_UI_MAX_CHARS` 的数值、`make_custom_save_token` 是否加盐/截断长度、`sorted_prompt_nodes.sort_key` 的排序键。
+
+（文末动态回填已证实：`TE_PROMPT_METADATA_KEY='te_prompt_text'`、`PROMPT_UI_MAX_CHARS=4000`、`NODE_IMAGE_CACHE` 为模块级 dict；`TE_PROMPT_SOURCE_CLASSES` 元组与 `TE_CUSTOM_SAVE_ALLOWED_EXTENSIONS` 未在模块级出现，仍待下钻。）
+
+## 动态 introspection 回填（Windows+ComfyUI 真机实测）
+
+> 数据源：GitHub Actions Windows + ComfyUI 真实环境运行时 introspection 快照，目标文件 `D:\a\_temp\ComfyUI\custom_nodes\TE_MAN\save_image_with_output_core.pyd`。以下为运行时模块属性/命名空间实测。本模块是 7 份规格中动态回填收益最大的一份：**5 个关键常量由推断转为实锤，其中 1 项修正了原推断**。
+
+### (a) 模块 docstring
+模块级 `__doc__` 为空；模块命名空间中无本模块自有类（`classes` 为空），即正文 §2 的 24 个公开对象全部为函数级，无类 docstring。
+
+### (b) 模块级常量（实锤值）——全部 6 项实测
+| 常量 | 运行时实测值 | 对正文结论的影响 |
+|---|---|---|
+| `TE_CUSTOM_SAVE_IMAGE_TYPE` | `'te_custom_save'` | ✅ 与静态/前端证据一致，定案 |
+| `SERIALIZED_PROMPT_KEY` | `'te_saved_prompt_text'` | ✅ 定案 |
+| `SERIALIZED_IMAGES_KEY` | `'te_saved_preview_images'` | ✅ 定案 |
+| `TE_PROMPT_METADATA_KEY` | `'te_prompt_text'` | ⚠️ **修正原推断**：原推测 `'parameters'`（ComfyUI 标准 PNG 元数据键）不成立——本插件使用自有元数据键 `te_prompt_text` 写入/读取提示词；`parameters` 字符串应是对 ComfyUI 通用元数据的兜底读取 |
+| `PROMPT_UI_MAX_CHARS` | `4000` | 定案：节点内提示词展示超 4000 字符截断加 `......`（此前"数值未确认"→ **已确认**） |
+| `NODE_IMAGE_CACHE` | `{}`（模块级 dict，快照时为空） | 定案：确为模块级可变缓存字典（真机刚启动时无缓存条目，符合预期）；mtime/size 失效机制不变 |
+
+**关键负证据**：`TE_PROMPT_SOURCE_CLASSES` 与 `TE_CUSTOM_SAVE_ALLOWED_EXTENSIONS` **未出现在模块级常量表**——两者是类属性或函数局部构造（每次调用时构建），其精确值（源类元组是否含更多成员、扩展名白名单是否含 `MPO`）仍未实测，维持 [中]。
+
+### (c) function_docs（编译保留的 docstring）
+此模块的 introspection 快照无 `function_docs` 条目——24 个公开函数均无 docstring 保留（或未导出），无新增函数文档。
+
+### (d) 未确认项核对结论
+- `TE_PROMPT_METADATA_KEY`：**已确认 `'te_prompt_text'`（动态回填，修正原 `'parameters'` 推断）**。
+- `PROMPT_UI_MAX_CHARS`：**已确认 `4000`（动态回填）**。
+- `NODE_IMAGE_CACHE`：**已确认为模块级 dict（动态回填）**。
+- `TE_PROMPT_SOURCE_CLASSES` 元组完整性：仍未确认（新增负证据：非模块级常量）。
+- `TE_CUSTOM_SAVE_ALLOWED_EXTENSIONS` 是否含 `MPO`：仍未确认（同上）。
+- `make_custom_save_token` 是否加盐/截断：仍未确认（introspection 未下钻函数实现）。
+- `sorted_prompt_nodes.sort_key` 排序键：仍未确认。
+- 佐证（consumers）：`nodes` 数据实锤消费链——注册节点 `TE_image_pro_save_image_with_output`（class `TESaveImageWithOutput`，module `custom_nodes.TE_image.Save_Image_With_Output`，`RETURN_TYPES=['IMAGE']`）是本核心库的唯一直接节点消费者；其前端协同键 `te_saved_preview_images`/`te_saved_prompt_text`/`te_prompt_text`/`te_custom_save` 与运行时常量一一对应，§3 输出契约获得双通道证实。另 `grid_split_core.pyd`/`grid_split_routes.pyd` 对 `resolve_image_info_path` 的复用（见该两份规格的动态回填节）构成本模块的第二消费者组。

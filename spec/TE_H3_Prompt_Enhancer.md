@@ -53,8 +53,8 @@ ComfyUI **节点模块**（不在 `__init__.py` 的 `SKIP_MODULES` 中，被加�
 
 | 注册键 | 类 | 显示名 | CATEGORY |
 |---|---|---|---|
-| `TE_H3_Prompt_Enhancer` | `TEH3PromptEnhancer` | `TE MAN MiniMax H3 AI提示词增强(本地orAPI)` | `TE MAN/Prompt` [中：两 CATEGORY 串均存在，`TE MAN/Prompt` 紧邻任务选项串区，归属按邻近性推断] |
-| `TE_H3_Reference_Bridge` | `TEH3ReferenceBridge` | `TE MAN H3素材转接口` | `TE MAN/Utils` [中：`TEH3ReferenceBridge.convert` 与 `TE MAN/Utils` 在常量表相邻] |
+| `TE_H3_Prompt_Enhancer` | `TEH3PromptEnhancer` | `TE MAN MiniMax H3 AI提示词增强(本地orAPI)` | `TE MAN/Prompt` 已确认（动态回填） |
+| `TE_H3_Reference_Bridge` | `TEH3ReferenceBridge` | `TE MAN H3素材转接口` | `TE MAN/Utils` 已确认（动态回填） |
 
 另有 `NODE_CLASS_MAPPINGS`、`NODE_DISPLAY_NAME_MAPPINGS`、`FUNCTION`、`RETURN_TYPES`、`RETURN_NAMES`、`CATEGORY`、`IS_CHANGED`、`OUTPUT_NODE`、`required`、`optional`、`tooltip`、`default`、`forceInput`、`multiline` 等节点定义字符串 [高]。
 
@@ -62,33 +62,32 @@ ComfyUI **节点模块**（不在 `__init__.py` 的 `SKIP_MODULES` 中，被加�
 
 ### 3.1 TEH3PromptEnhancer（TE_H3_Prompt_Enhancer）
 
-`FUNCTION = 'enhance_prompt'`（qualname `TEH3PromptEnhancer.enhance_prompt` [高]）；定义了 `IS_CHANGED`（qualname `TEH3PromptEnhancer.IS_CHANGED` [高]，同表出现 `sha1`/`hexdigest`/`urandom` —— 推断对输入做 sha1 并混入随机数使每次运行都重新执行 [中]）；`OUTPUT_NODE` 字符串存在 [高，是否置 True 未确认]。
+`FUNCTION = 'enhance_prompt'`（qualname `TEH3PromptEnhancer.enhance_prompt` [高]）；定义了 `IS_CHANGED`（`has_IS_CHANGED=true` 已确认，动态回填，同表出现 `sha1`/`hexdigest`/`urandom` —— 推断对输入做 sha1 并混入随机数使每次运行都重新执行 [中]）；`OUTPUT_NODE = true` 已确认（动态回填）。
 
 #### 输入参数（INPUT_TYPES 推断）
 
 | 参数名 | 类型/控件 | 证据与置信度 |
 |---|---|---|
-| `输入提示词`（推断内部名 `user_prompt`） | STRING，`forceInput`（转输入口） | tooltip 原文"输入剧情、动作、运镜、对白和引用标签，例如 <Picture 1>。"与"连接上游提示词文本。"均在表内 [高]；JS `syncPromptReferencesForTarget` 正是沿 `输入提示词` 输入口向上回溯 [高] |
-| `task`（任务模式） | COMBO，5 选项：`全参考模式(Reference to Video)`、`文生视频(T2VA)`、`首帧图生视频(I2VA)`、`首尾帧视频(FL2VA)`、`尾帧图生视频(L2VA)` | 五个选项串 + `(T2VA)`/`(I2VA)`/`(FL2VA)`/`(L2VA)`/`(Reference to Video)` 字面量 [高]；`TASK_OPTIONS` 常量 [高] |
-| `增强方式`（推断） | COMBO，2 选项：`提示词模版(本地)`、`增强提示词(API)`；默认本地 | 选项串与 tooltip"本地模板不调用接口；API增强直接输出可用于 H3 的中文提示词。" [高]；参数名"增强方式"字面量存在（紧邻 `TEH3ReferenceBridge.INPUT_TYPES`，见下方 Bridge 一节注）[中] |
-| `duration`（视频时长） | FLOAT | 局部名 `duration`、`FLOAT` 类型串、tooltip"用于规划镜头时间戳；H3 推荐生成时长约 5-15 秒。" [高]；默认值未确认 |
-| `参考素材说明`（推断内部名 `reference_description`） | STRING multiline | tooltip"按标签说明素材内容和用途；未说明时 AI 不会臆造素材细节" [高]；参数名来自 JS `getWidgetByName(node,'参考素材说明')` [高] |
-| `H3参考素材` | `TE_H3_REFERENCES` 类型输入口，`forceInput` | tooltip"连接 TE MAN MiniMaxH3增强提示词Prompt TEXT 的 H3参考素材输出。" [高]；类型由 JS `ensureH3ReferenceInput` 动态添加 [高] |
-| `reference_labels` | STRING（隐藏/自动） | tooltip"由前端根据 H3 官方节点的素材连接自动生成。" [高] |
-| `首尾帧状态`（参数名未确认） | COMBO/STRING，值：`是，仅首帧`、`是，仅尾帧`、`是，首帧和尾帧`（另有否定值"否"未检出——可能存在，未确认） | 三选项串 + 用户请求行前缀"首尾帧状态：" [中] |
-| `api_base_url` | STRING | tooltip"Responses API 服务地址，可填写到域名、/v1 或 /v1/responses"；空值报错"请在 config.ini 中配置 API URL 或在节点中填写" [高] |
-| `api_key` | STRING | tooltip"API Key；留空则读取 config.ini"；空值报错"请在 config.ini 中配置 API Key 或在节点中填写" [高] |
-| `model` | STRING，默认 `gpt-5.6-sol` | tooltip"服务端支持的 Responses API 模型名称。"；`DEFAULT_MODEL` + 字面量 `gpt-5.6-sol` [高] |
-| `temperature` | FLOAT | 仅局部名 `temperature` [中，控件默认未确认] |
-| `max_output_tokens` | INT/FLOAT | 局部名 `max_output_tokens`，出现在 `_request_enhancement` 参数串 [高（存在），控件默认未确认] |
-| `timeout`（`timeout_s`） | FLOAT | tooltip"API 请求超时时间（秒）" [高] |
-| `bypass_proxy`（绕过代理） | BOOLEAN，默认关 | 显示名"绕过代理"、tooltip"需要忽略系统代理时开启。"、`trust_env`/`disable` [高] |
+| `输入提示词`（实测键名即 `输入提示词`） | STRING，multiline=true（**非** forceInput，动态回填更正） | tooltip 原文"输入剧情、动作、运镜、对白和引用标签，例如 <Picture 1>。" [高] |
+| `任务类型`（实测键名，静态推断的 `task` 不成立） | COMBO，5 选项：`全参考模式(Reference to Video)`、`文生视频(T2VA)`、`首帧图生视频(I2VA)`、`首尾帧视频(FL2VA)`、`尾帧图生视频(L2VA)`；default=`全参考模式(Reference to Video)` | 五选项串 + `TASK_OPTIONS` 常量 [高]；default 已确认（动态回填） |
+| `增强方式`（实测键名） | COMBO，2 选项：`本地模板`、`API增强`；default=`本地模板` | tooltip"本地模板不调用接口；API增强直接输出可用于 H3 的中文提示词。" [高]；**选项实为"本地模板/API增强"，非"提示词模版(本地)/增强提示词(API)"（那两个串是输出口名）** |
+| `视频时长`（实测键名，内部局部名 `duration`） | FLOAT，default 5.0，min 1.0，max 150.0，step 0.5 | tooltip"用于规划镜头时间戳；H3 推荐生成时长约 5-15 秒。"；default 已确认（动态回填） |
+| `参考素材说明`（实测键名） | STRING multiline，default="" | tooltip"按标签说明素材内容和用途；未说明时 AI 不会臆造素材细节" [高] |
+| `api_key` | STRING，default=""，非 multiline | tooltip"API Key；留空则读取 config.ini。" [高] |
+| `api_base_url` | STRING，default=`https://teynex.com` | tooltip"Responses API 服务地址，可填写到域名、/v1 或 /v1/responses。"；default 已确认（动态回填，`DEFAULT_API_BASE_URL="https://teynex.com"` 常量实锤） |
+| `model` | STRING，default=`gpt-5.6-sol` | tooltip"服务端支持的 Responses API 模型名称。"；`DEFAULT_MODEL="gpt-5.6-sol"` 常量实锤（动态回填） |
+| `max_output_tokens` | INT，default 4096，min 512，max 32768，step 256 | 已确认（动态回填） |
+| `temperature` | FLOAT，default 0.6，min 0.0，max 2.0，step 0.05 | 已确认（动态回填） |
+| `timeout_s`（optional，实测键名） | INT，default 300，min 30，max 1800 | tooltip"API 请求超时时间（秒）。"（动态回填） |
+| `绕过代理`（optional） | BOOLEAN，default=false | tooltip"需要忽略系统代理时开启。"（动态回填） |
+| `H3参考素材`（optional） | `TE_H3_REFERENCES` 类型输入口（无 forceInput 标记，动态回填） | tooltip"连接 TE MAN MiniMaxH3增强提示词Prompt TEXT 的 H3参考素材输出。" [高] |
 
-`optional` 分组字符串存在 [高]；具体哪些参数归 optional 未确认。
+- required/optional 归属已确认（动态回填）：required = `输入提示词、任务类型、视频时长、参考素材说明、增强方式、api_key、api_base_url、model、max_output_tokens、temperature`；optional = `H3参考素材、timeout_s、绕过代理`。
+- **动态回填更正**：静态推断的 `reference_labels`（"由前端根据 H3 官方节点的素材连接自动生成。"）与"首尾帧状态"COMBO（`是，仅首帧/是，仅尾帧/是，首尾帧和尾帧` 三选项）**均不在本节点 INPUT_TYPES 中**——`reference_labels` 属于 `TEH3ReferenceBridge`（见 3.2），"首尾帧状态："前缀串是 `_build_user_request` 组装的用户请求行文案，不是控件。
 
 #### 返回
 
-- `RETURN_TYPES`/`RETURN_NAMES` 字符串存在 [高]；主输出应为 STRING（增强后的提示词），候选佐证：独立短串 `H3参考素材`（@140968）与 `增强后的提示词`（仅出现在系统提示词正文"不输出…'增强后的提示词'等前缀"中，非输出名）[中]。`TEH3PromptEnhancer` 的 JS 处理提到 `outputs?.length` 可为多个（`Array.from({length: outputs.length})` 遍历全部输出口找下游目标）[中]，即可能同时输出 `TE_H3_REFERENCES` 透传口。**确切元组：未确认**。
+- 已确认 `RETURN_TYPES = ("STRING", "STRING")`、`RETURN_NAMES = ("增强提示词(API)", "提示词模版(本地)")`（动态回填）——两个输出口分别输出 API 增强结果与本地模板文本；静态推断的"可能同时输出 TE_H3_REFERENCES 透传口"不成立。
 
 #### 关键行为
 
@@ -106,10 +105,10 @@ ComfyUI **节点模块**（不在 `__init__.py` 的 `SKIP_MODULES` 中，被加�
 
 ### 3.2 TEH3ReferenceBridge（TE_H3_Reference_Bridge）
 
-- `FUNCTION = 'convert'`（qualname `TEH3ReferenceBridge.convert` [高]）。
-- 输入（推断）：`text`（STRING，转接上游文本，JS 中 `syncPromptReferencesForTarget` 对 Bridge 节点沿 `text` 输入回溯 [高]）；`reference_labels`（STRING，前端自动生成，JS `setupH3ReferenceBridge` 只隐藏该 widget 并在连接/序列化时同步 [高]）；tooltip"连接上游提示词文本。"与"由前端根据 H3 官方节点的素材连接自动生成。"两条短 tooltip 同样可能属于本节点（两条均在表中，归属未确认）。
-- 输出：`TE_H3_REFERENCES` 相关字符串存在于本 pyd [高]；推断输出 `STRING`（text）+ `TE_H3_REFERENCES`（参考素材），供 enhancer 的 `H3参考素材` 输入口消费 [中；确切元组未确认]。
-- `convert` 行为：把上游 `TE_prompt_text`/文本节点的提示词与自动引用标签规范化后转发（"素材转接口"），使未直接相邻的节点也能接入 H3 增强链路 [中]。无网络行为。
+- `FUNCTION = 'convert'`（qualname `TEH3ReferenceBridge.convert` [高]；CATEGORY=`TE MAN/Utils` 已确认，动态回填）。
+- INPUT_TYPES 已确认（动态回填）：required = `text`（STRING，**forceInput=true**，tooltip"连接上游提示词文本。"）+ `reference_labels`（STRING multiline，default=""，tooltip"由前端根据 H3 官方节点的素材连接自动生成。"）。无 optional、无 hidden。
+- 返回：已确认 `RETURN_TYPES = ("STRING", "TE_H3_REFERENCES")`、`RETURN_NAMES = ("text", "H3素材")`（动态回填）——即 text 透传 + 规范化后的 H3 素材引用对象，供 enhancer 的 `H3参考素材` 输入口消费。
+- `convert` 行为：把上游 `TE_prompt_text`/文本节点的提示词与自动引用标签规范化后转发（"素材转接口"），使未直接相邻的节点也能接入 H3 增强链路 [中]。无网络行为；`has_IS_CHANGED=false`、`has_VALIDATE_INPUTS=false`、无 OUTPUT_NODE（动态回填）。
 
 ## 4. 外部依赖与副作用
 
@@ -214,3 +213,86 @@ setupH3ReferenceBridge：隐藏 bridge 的 'reference_labels' widget 并自动�
 ### 6.6 skills 交叉证据（skills/h3-prompt-writing/SKILL.md）
 
 > "Write MiniMax H3 video generation prompts for T2VA, I2VA, FL2VA, L2VA, and Ref2VA... composing integrated_multimodal_description, overall_soundscape, and non_diegetic_music, aligning keyframes..." —— 与本节点内置系统提示词的字段结构、任务划分完全同构，属同一 H3 协议的两种载体（skill 英文版供构想台对话用；节点中文版内置）。
+
+## 7. 动态 introspection 回填（Windows+ComfyUI 真机实测）
+
+> 数据来源：GitHub Actions Windows 2025 Server + Python 3.13.16 + ComfyUI 真实加载后的运行时 introspection（module 显示为 `custom_nodes.TE_image.TE_H3_Prompt_Enhancer`）。模块文件为 `TE_H3_Prompt_Enhancer.pyd`。
+
+### 7.1 TEH3PromptEnhancer（TE_H3_Prompt_Enhancer）——INPUT_TYPES 全表
+
+- FUNCTION=`enhance_prompt`；CATEGORY=`TE MAN/Prompt`；**OUTPUT_NODE=true**；`has_IS_CHANGED=true`、`has_VALIDATE_INPUTS=false`；无 `has_check_lazy_status`/`has_on_execute`。
+- RETURN_TYPES=`("STRING","STRING")`；RETURN_NAMES=`("增强提示词(API)","提示词模版(本地)")`。
+- required：
+
+| 参数 | 类型 | 附加属性 |
+|---|---|---|
+| `输入提示词` | STRING | multiline=true，default=""，tooltip=`输入剧情、动作、运镜、对白和引用标签，例如 <Picture 1>。` |
+| `任务类型` | COMBO | `["全参考模式(Reference to Video)","文生视频(T2VA)","首帧图生视频(I2VA)","首尾帧视频(FL2VA)","尾帧图生视频(L2VA)"]`，default=`全参考模式(Reference to Video)`，tooltip=`按实际使用的 MiniMax H3 节点和首尾帧连接状态选择。` |
+| `视频时长` | FLOAT | default 5.0，min 1.0，max 150.0，step 0.5，tooltip=`用于规划镜头时间戳；H3 推荐生成时长约 5-15 秒。` |
+| `参考素材说明` | STRING | multiline=true，default=""，tooltip=`按标签说明素材内容和用途；未说明时 AI 不会臆造素材细节。` |
+| `增强方式` | COMBO | `["本地模板","API增强"]`，default=`本地模板`，tooltip=`本地模板不调用接口；API增强直接输出可用于 H3 的中文提示词。` |
+| `api_key` | STRING | default=""，tooltip=`API Key；留空则读取 config.ini。` |
+| `api_base_url` | STRING | default=`https://teynex.com`，tooltip=`Responses API 服务地址，可填写到域名、/v1 或 /v1/responses。` |
+| `model` | STRING | default=`gpt-5.6-sol`，tooltip=`服务端支持的 Responses API 模型名称。` |
+| `max_output_tokens` | INT | default 4096，min 512，max 32768，step 256 |
+| `temperature` | FLOAT | default 0.6，min 0.0，max 2.0，step 0.05 |
+
+- optional：
+
+| 参数 | 类型 | 附加属性 |
+|---|---|---|
+| `H3参考素材` | TE_H3_REFERENCES | tooltip=`连接 TE MAN MiniMaxH3增强提示词Prompt TEXT 的 H3参考素材输出。` |
+| `timeout_s` | INT | default 300，min 30，max 1800，tooltip=`API 请求超时时间（秒）。` |
+| `绕过代理` | BOOLEAN | default=false，tooltip=`需要忽略系统代理时开启。` |
+
+- 无 hidden 输入；`输入提示词` 不带 forceInput（是普通 multiline widget，前端仍可沿其回溯连接）。
+
+### 7.2 TEH3ReferenceBridge（TE_H3_Reference_Bridge）——INPUT_TYPES 全表
+
+- FUNCTION=`convert`；CATEGORY=`TE MAN/Utils`；无 OUTPUT_NODE；`has_IS_CHANGED=false`、`has_VALIDATE_INPUTS=false`。
+- RETURN_TYPES=`("STRING","TE_H3_REFERENCES")`；RETURN_NAMES=`("text","H3素材")`。
+- required（仅两项，无 optional/hidden）：
+
+| 参数 | 类型 | 附加属性 |
+|---|---|---|
+| `text` | STRING | **forceInput=true**，tooltip=`连接上游提示词文本。` |
+| `reference_labels` | STRING | multiline=true，default=""，tooltip=`由前端根据 H3 官方节点的素材连接自动生成。` |
+
+### 7.3 模块常量实锤值（modules["TE_MAN.TE_H3_Prompt_Enhancer"].constants）
+
+| 常量 | 实测值 |
+|---|---|
+| `DEFAULT_API_BASE_URL` | `"https://teynex.com"`（§2 "精确完整 URL 未确认" → 已确认，就是域名，运行时拼 `/v1/responses`） |
+| `DEFAULT_MODEL` | `"gpt-5.6-sol"` |
+| `TASK_T2VA` | `"文生视频(T2VA)"` |
+| `TASK_I2VA` | `"首帧图生视频(I2VA)"` |
+| `TASK_FL2VA` | `"首尾帧视频(FL2VA)"` |
+| `TASK_L2VA` | `"尾帧图生视频(L2VA)"` |
+| `TASK_FULL_REFERENCE` | `"全参考模式(Reference to Video)"` |
+| `TASK_OPTIONS` | `["全参考模式(Reference to Video)","文生视频(T2VA)","首帧图生视频(I2VA)","首尾帧视频(FL2VA)","尾帧图生视频(L2VA)"]` |
+| `REFERENCE_ORDER` | `{"Picture":0,"Video":1,"Audio":2}`（标签排序权重） |
+| `H3_T2VA_COMMON_SYSTEM_PROMPT` | T2VA 专用中文系统提示词（10 条硬性规则 + 固定标记 + 说话者规则 + 声音规则，与 §3.1"任务模板"摘要一致） |
+| `H3_FRAME_COMMON_SYSTEM_PROMPT` | I2VA/FL2VA/L2VA 共用框架系统提示词（12 条硬性规则 + 固定标记 + 说话者/声音规则） |
+| `H3_FULL_REFERENCE_COMMON_SYSTEM_PROMPT` | 全参考模式系统提示词（含 `<Subject N>`/summary/retention_analysis 枚举与六字段协议） |
+| `H3_TASK_FINAL_CHECKLISTS` | 5 个任务各自的输出前自检清单：`文生视频(T2VA)`（7 条）、`首帧图生视频(I2VA)`（8 条）、`首尾帧视频(FL2VA)`（7 条）、`尾帧图生视频(L2VA)`（7 条）、`全参考模式(Reference to Video)`（11 条） |
+| `NODE_CLASS_MAPPINGS` | `{"TE_H3_Prompt_Enhancer": TEH3PromptEnhancer, "TE_H3_Reference_Bridge": TEH3ReferenceBridge}` |
+| `NODE_DISPLAY_NAME_MAPPINGS` | `{"TE_H3_Prompt_Enhancer": "TE MAN MiniMax H3 AI提示词增强(本地orAPI)", "TE_H3_Reference_Bridge": "TE MAN H3素材转接口"}` |
+| `PLUGIN_DIR`/`MODULE_DIR`/`_path` | 实测均为插件根目录 `D:\a\_temp\ComfyUI\custom_nodes\TE_MAN`（运行时值） |
+
+### 7.4 对正文"未确认"项的核对结论
+
+| 正文位置 | 结论 |
+|---|---|
+| §2 `DEFAULT_API_BASE_URL`"精确完整 URL 未确认" | 已确认：`https://teynex.com`（动态回填） |
+| §3.1 `OUTPUT_NODE`"是否置 True 未确认" | 已确认：true（动态回填） |
+| §3.1 `duration` 默认值未确认 | 已确认：FLOAT default 5.0（min 1.0 / max 150.0 / step 0.5） |
+| §3.1 `temperature` 控件默认未确认 | 已确认：default 0.6 |
+| §3.1 `max_output_tokens` 控件默认未确认 | 已确认：INT default 4096 |
+| §3.1 `timeout` 类型 FLOAT [中] | 更正：实为 INT（`timeout_s`，default 300） |
+| §3.1 "哪些参数归 optional 未确认" | 已确认：`H3参考素材`、`timeout_s`、`绕过代理` 三个 |
+| §3.1 `输入提示词` forceInput 推断 | 更正：为普通 multiline widget，无 forceInput 标记 |
+| §3.1 `首尾帧状态` 参数名未确认 | 不成立：无此控件；"首尾帧状态："是 `_build_user_request` 请求行文案 |
+| §3.1 `reference_labels` 属于 enhancer | 不成立：属于 TEH3ReferenceBridge |
+| §3.1 返回"确切元组：未确认" | 已确认：`("STRING","STRING")` × `("增强提示词(API)","提示词模版(本地)")`，无 TE_H3_REFERENCES 透传口 |
+| §3.2 Bridge 输出"确切元组未确认" | 已确认：`("STRING","TE_H3_REFERENCES")` × `("text","H3素材")` |
+| §4 "请求体含 temperature/stream 未确认" | 保留未确认（introspection 不含请求体构造） |

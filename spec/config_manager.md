@@ -47,7 +47,7 @@ TE_MAN 插件的**内部配置支撑库**（在 `__init__.py` 的 `SKIP_MODULES`
 2. **Effective Base URL 解析链** `get_effective_api_base_url` [中，顺序为推断]：
    - 测试模式开（env var 为真，`_parse_bool` 解析 true/false/yes 等，字符串证据 `true`/`false`/`yes`）→ 用测试配置的 `test_base_url`；
    - 否则 `_get_configured_base_url`：优先 `[gemini] api_base_url` 明文，其次 `[gemini] api_base_url_enc` 混淆值（`_decode_api_base_url` 解码）；
-   - 最后回退 `_get_default_base_url()`：由 **`_DEFAULT_API_BASE_URL_CODEPOINTS`**（码点数组，字面量被刻意拆散防搜串）经 genexpr 逐 `chr(c)` 拼接 — `PyUnicode_FromOrdinal` 在 0x1800031e8 处有唯一调用点（反汇编证据）。由于码点既非 4/8 字节连续数组、也无邻近 `PyLong_FromLong` 调用簇，单个值无法静态摘出；**结合根目录 `config.ini` 样例 `api_base_url = https://teynex.com` 与 README「API 站：https://teynex.com」推断默认值即为该站，未确认**。
+   - 最后回退 `_get_default_base_url()`：由 **`_DEFAULT_API_BASE_URL_CODEPOINTS`**（码点数组，字面量被刻意拆散防搜串）经 genexpr 逐 `chr(c)` 拼接 — `PyUnicode_FromOrdinal` 在 0x1800031e8 处有唯一调用点（反汇编证据）。由于码点既非 4/8 字节连续数组、也无邻近 `PyLong_FromLong` 调用簇，单个值无法静态摘出；**结合根目录 `config.ini` 样例 `api_base_url = https://teynex.com` 与 README「API 站：https://teynex.com」推断默认值即为该站（见文末动态回填：模块常量表无独立默认 URL 常量，倾向支持该推断），未确认**。
 3. **XOR+Base64 解码** `api_base_url_enc` [高，机制级]：
    - `base64.b64decode` 取字节，与 `_ENC_KEY_PARTS` 衍生的密钥逐位 XOR（反汇编证据：`PyNumber_Xor` @ 0x180002b37 位于迭代器循环内；`PyNumber_InPlaceXor` @ 0x180002527 位于字节缓冲区就地写回循环），再按 `utf-8` 解为 `plain_url`。
    - 作用域：错误消息「解码测试配置中的 `api_base_url_enc` 失败」明确其主用途是**解码测试配置节**中的编码 URL [高]；主配置节是否同样走此逻辑 未确认。
@@ -166,3 +166,30 @@ network_workers_cap = 4
 ```
 
 （样例中 `api_key = you api_key` 属用户手填的占位值，非代码内置串；二进制内真正内置的占位键集合为 `yourapikeyhere` 一族 [高]。）
+
+## 动态 introspection 回填（Windows+ComfyUI 真机实测）
+
+> 数据源：GitHub Actions Windows + ComfyUI 真实环境运行时 introspection 快照，目标文件 `D:\a\_temp\ComfyUI\custom_nodes\TE_MAN\config_manager.pyd`。以下为运行时模块属性/命名空间实测。
+
+### (a) 模块 docstring
+模块级 `__doc__` 为空。正文引用的「集中管理 Banana Gemini 节点的配置与测试模式逻辑」经运行时证实是**类 `ConfigManager` 的 docstring**（原文：`集中管理 Banana Gemini 节点的配置与测试模式逻辑。`），`__module__` 报 `custom_nodes.TE_image.config_manager`（编译期包名保留，真机目录已为 TE_MAN）。
+
+### (b) 模块级常量（实锤值）
+运行时模块常量表仅含：
+| 常量 | 实测值 | 说明 |
+|---|---|---|
+| `MODULE_DIR` | `D:\a\_temp\ComfyUI\custom_nodes\TE_MAN` | 真机运行目录；与静态证据一致（`_base_dir` 回退目标） |
+
+**关键负证据（与静态推断直接相关）**：
+- `_DEFAULT_API_KEY` **不在**模块级命名空间——正文 [常量与配置键] 一节列出的 `_DEFAULT_API_KEY` 更可能是类属性/函数局部量；
+- `_DEFAULT_API_BASE_URL_CODEPOINTS`、`_ENC_KEY_PARTS`、`_CONFIG_SECTION`、`_TEST_CONFIG_FILE_NAME`、`_TEST_CONFIG_SECTION`、`_TEST_MODE_ENV_VAR`、`_PLACEHOLDER_KEYS` 均未出现在模块级常量表——说明这批常量同样为**类属性或实现细节**，introspection 未下钻到该层级，其具体值（默认 URL 码点、XOR 密钥、限幅边界）**仍未实测**。
+- 由此间接佐证：默认 Base URL 并非以明文常量形式存在于模块层（防检索设计成立），"默认值 = https://teynex.com" 维持**推断未实测**状态。
+
+### (c) function_docs（编译保留的 docstring）
+模块命名空间中带 docstring 的对象仅捕获到 typing 导入名（`Dict`/`Optional`），业务函数无 docstring 保留，无新增。类命名空间实锤：`ConfigManager` 为本模块自有类（doc 见上）。
+
+### (d) 未确认项核对结论
+- `_ENC_KEY_PARTS` 具体值 / `_DEFAULT_API_BASE_URL_CODEPOINTS` 码点 / cost_factor 限幅边界：**仍未确认**（新证据：三者均非模块级常量，需类属性下钻或运行时调用捕获）。
+- 主配置节 `api_base_url_enc` 是否走 XOR 解码：维持未确认。
+- `sanitize_api_key` 命中占位符后的返回值：维持未确认。
+- 佐证（consumers）：`nodes` 数据中 30 个注册节点无一 `module` 字段指向 `TE_MAN.config_manager`，与"纯内部支撑库、无节点注册"结论一致；其消费者 `TE_MAN.Grok_Safe_PY`（8 个生成器节点）与 `custom_nodes.TE_image.*` 系列节点模块的存在，间接印证配置层的下游规模。

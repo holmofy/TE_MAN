@@ -215,3 +215,75 @@ comfy.model_management  comfy.utils  PromptServer  _DummyPromptServer  update_ab
 - `_SPECIAL_MODEL_PREFIX` 实际前缀值、`_FIX_API_KEY_PREFIX` 实际前缀值、`_ASYNC_BASE_MODELS` 成员列表、快取功能选项行的完整枚举顺序。
 - `peak_mode`、`stagger_delay`、`_DummyPromptServer` 的确切用法；特渠异步响应是否复用视频接口扩展字段（`duration` 等）。
 - `gemini-2.0-flash-exp` 等模型名的具体绑定（OpenAI 模式默认 vs Gemini 模式候选）。
+
+## 7. 动态 introspection 回填（Windows+ComfyUI 真机实测）
+
+> 数据来源：GitHub Actions Windows 环境真实加载采集（`Windows-2025Server-10.0.26100`，Python 3.13.16，ComfyUI 目录 `D:\a\_temp\ComfyUI`，TE_MAN 无导入错误）。本模块 pyd 类经明文包装层 `TE_MAN.Grok_Safe_PY` 暴露：`BananaImageNode` → `BananaGeminiImageSafePyNode`（键 `TE_image_pro_banana`）、`BananaSpecialAsyncNode` → `BananaGeminiAsyncSafePyNode`（键 `TE_image_pro_special_async2`），包装层在做输入图处理前透传参数。下表为**包装层最终暴露**的完整参数表。
+
+### 7.1 运行时 INPUT_TYPES 全表
+
+#### `TE_image_pro_banana`（BananaGeminiImageSafePyNode → 基类 BananaImageNode，显示名 `TE MAN Gemini Image`）
+
+**required：**
+
+| 参数 | 类型 | 选项 / 默认值 | 约束 | tooltip（原文） |
+|---|---|---|---|---|
+| `prompt` | STRING multiline | 默认 `一只可爱的小猫` | — | `生成图像的文本提示词，可多行描述内容、风格等` |
+| `api_key` | STRING | 默认 `""` | — | `调用服务的 API Key；留空则优先使用 config.ini 中的配置` |
+| `api_base_url` | STRING | 默认 `""` | — | `API 服务地址；留空则使用 config.ini 中的配置` |
+| `model_type` | **STRING（非下拉）** | 默认 `gemini-3.1-flash-image-preview` | multiline false | `模型名称）`（原文即带右括号错字） |
+| `batch_size` | INT | 默认 `1` | min 1 / max 8 | `一次请求中要生成的图片数量，范围 1~8` |
+| `aspect_ratio` | combo | `Auto, 1:1, 9:16, 16:9, 21:9, 2:3, 3:2, 3:4, 4:3, 4:5, 5:4`（**11 项，含 21:9**），默认 `Auto` | — | `生成图像的宽高比例，Auto 为由服务端自动决定` |
+| `API格式` | combo | `Gemini原生API, OpenAI Images API, OpenAI Chat API`，默认 `Gemini原生API` | — | `选择API格式：Gemini原生API \| OpenAI Images API (/v1/images/*) \| OpenAI Chat API (/v1/chat/completions)` |
+
+**optional：** `seed`（INT，默认 -1，min -1 / max 102400，control_after_generate true，tooltip `随机种子，-1 为自动随机；固定种子可复现同一输出`）、`top_p`（FLOAT，默认 **0.95**，min 0.0 / max 1.0 / step 0.01）、`image_size`（combo `1K/2K/4K`，默认 **`2K`**，tooltip `分辨率`）、`image_1`…`image_9`（IMAGE，tooltip `参考图像 N，可为空；用于图生图或多图融合`）、`绕过代理`（BOOLEAN 默认 false，tooltip `梯子速度不佳、不可靠时开启`）、`快捷功能`（combo 7 项同 Grok_Image 模块，默认 `无`）。
+
+**运行时未暴露**：`Gemini原生流式` 选项（四种协议下拉被包装层裁成三种）、`request_timeout`、`verify_ssl`（§3.1 末行的超时/SSL 参数推断不成立）。
+
+#### `TE_image_pro_special_async2`（BananaGeminiAsyncSafePyNode → 基类 BananaSpecialAsyncNode，显示名 **`TE MAN Gemini 特渠`**）
+
+**required：**
+
+| 参数 | 类型 | 选项 / 默认值 | 约束 | tooltip（原文） |
+|---|---|---|---|---|
+| `prompt` | STRING multiline | 默认 `一只快乐的小猫` | — | `生成图像的文本提示词` |
+| `api_key` / `api_base_url` | STRING | 默认 `""` | — | 同上 |
+| `model_type` | combo | `nano-banana-pro, nano-banana-2`，默认 `nano-banana-pro` | — | `基础模型；会自动根据下方分辨率拼接实际请求模型名` |
+| `batch_size` | INT | 默认 `1` | min 1 / max 8 | `一次请求中要生成的图片数量，范围 1~8` |
+| `aspect_ratio` | combo | `1:1, 16:9, 9:16, 4:3, 3:4`（5 项，**无 Auto**），默认 `4:3` | — | `宽高比` |
+| `image_size` | combo | `1K, 2K, 4K`，默认 `1K` | — | `分辨率；会自动拼接到模型名称中` |
+
+**optional：** `seed`、`image_1`…`image_9`、`绕过代理`、`快捷功能`（同上）。
+
+#### `BananaSpecialChannelNode`（特渠固定 Chat 流式）
+
+**已确认：当前发行版运行时未注册**——全量 30 个注册节点中没有任何键指向该类（`NODE_CLASS_MAPPINGS` 与其 `BananaImageNode`/`BananaSpecialAsyncNode` 均不含），即特渠流式节点在本版本不暴露给前端。
+
+**注册元数据（实锤）**：两节点均为 `FUNCTION = "generate_images"`、`CATEGORY = "TE MAN/Gemini"`（**勘误**：§2 写作 `TE_MAN/Gemini`，实际为空格分隔的 `TE MAN/Gemini`）、`OUTPUT_NODE = True`、`RETURN_TYPES = ["IMAGE", "STRING"]`、`RETURN_NAMES = ["images", "text"]`；`method_docs`：`generate_single_image` → `生成单张图片（用于并发）`。
+
+### 7.2 模块常量实锤值（动态采集，pyd 模块 `TE_MAN.Gemini_Imagen_Generator`）
+
+- `MODULE_DIR = D:\a\_temp\ComfyUI\custom_nodes\TE_MAN`
+- 基类层 `NODE_CLASS_MAPPINGS["TE_image_pro_banana"] = custom_nodes.TE_image.Gemini_Imagen_Generator.BananaImageNode`、显示名 `TE MAN Gemini Image`
+- `QUICK_FUNCTION_NONE = "无"`；`QUICK_FUNCTION_OPTIONS`（7 项）：`无, 白底三视图, 白底四视图, 九宫格[剧情]分镜, 九宫格[场景]分镜, 四宫格[剧情]分镜, 四宫格[视角]分镜`；`QUICK_FUNCTION_PREFIXES` 各模板全文与 Grok_Image 模块同文，归属映射实锤：`白底三视图` → 短前缀 `三视图（正面、侧面、背面），白色纯色背景，人物角色设计图，`；`白底四视图` → 长模板 `参照原图生成人物面部特写搭配全身三视图组合画面；…`（§3.4 §6.5 中两句三视图文本的归属就此定案）
+- **`_FIX_API_BASE_URL_ENC` / `_FIX_API_KEY_PREFIX` / `_SPECIAL_MODEL_PREFIX` / `_ASYNC_BASE_MODELS` / `_ASYNC_IMAGE_SIZES` / `_ASYNC_ASPECT_RATIOS` 未被 introspection 以模块常量形式采集**（推断为类属性或非常量容器）；静态解码值 `https://api666.zeabur.app`（XOR 0x07，§4.2）仍是唯一证据。 `_ASYNC_BASE_MODELS` / `_ASYNC_IMAGE_SIZES` / `_ASYNC_ASPECT_RATIOS` 的**成员可经包装层下拉间接实锤**：`["nano-banana-pro","nano-banana-2"]` / `["1K","2K","4K"]` / `["1:1","16:9","9:16","4:3","3:4"]`（默认 nano-banana-pro / 1K / 4:3）。
+
+### 7.3 "未确认"项核对结果
+
+| 原文位置 | 结论 |
+|---|---|
+| §2 / 末节 两个特渠节点的注册键与显示名 | **已确认：`TE_image_pro_special_async2` = 特渠异步（显示名 `TE MAN Gemini 特渠`）；特渠流式（BananaSpecialChannelNode）当前版本未注册**（动态回填） |
+| §2 显示名 `TE MAN Gemini Image`（原[中]） | **已确认（动态回填）**；CATEGORY 勘误为 `TE MAN/Gemini` |
+| 末节 `TE_image_pro_special_async2` 对应关系[中] | **已确认（动态回填）** |
+| §3.1 `prompt` 默认 `一只可爱的小猫`（原[低]） | **已确认（动态回填）** |
+| §3.1 `aspect_ratio` 选项与默认 Auto | **已确认：11 项（含 21:9），默认 Auto（动态回填）** |
+| §3.1 `top_p` 默认值 | **已确认：0.95，step 0.01（动态回填）** |
+| §3.1 `model_type` 下拉四种选项 | **已确认：运行时仅三种（`Gemini原生流式` 被包装层裁剪），且实际参数名为 `API格式`；`model_type` 在 banana 节点是自由 STRING（默认 gemini-3.1-flash-image-preview），在特渠异步节点是下拉（动态回填）** |
+| §3.1 超时/verify_ssl 参数 | **已确认：运行时未暴露（动态回填）** |
+| §3.2 `_SPECIAL_MODEL_PREFIX` 值 | 未采集，保持未确认（该节点未注册，意义有限） |
+| §3.3 `_ASYNC_BASE_MODELS` / `_ASYNC_IMAGE_SIZES` / `_ASYNC_ASPECT_RATIOS` 成员 | **已确认（经下拉间接实锤）：见 §7.2（动态回填）** |
+| §4.2 `_FIX_API_KEY_PREFIX` 实际前缀值 | 未采集，保持未确认 |
+| §4.2 `一只快乐的小猫` 孤立彩蛋串 | **已确认：是特渠异步节点 `prompt` 默认值（动态回填）** |
+| 末节 `peak_mode`/`stagger_delay`/`_DummyPromptServer` 用法 | 未采集，保持未确认 |
+| 末节 `RETURN_TYPES` / `RETURN_NAMES` 完整序列 | **已确认：两节点均 `("IMAGE", "STRING")` / `("images", "text")`（动态回填）** |
+| 末节 `gemini-2.0-flash-exp` 绑定 | 未采集，保持未确认；`gemini-3.1-flash-image-preview` **已确认**为 banana 节点 `model_type` 默认值（动态回填） |

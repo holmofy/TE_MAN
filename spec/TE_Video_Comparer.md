@@ -23,8 +23,8 @@ ComfyUI 视频对比节点模块（节点，非支撑库）。提供单个输出
   - `CATEGORY = "TE MAN/Utils"` [高，池字符串 `TE MAN/Utils`]
   - `DESCRIPTION = "在节点内叠加播放两个视频，鼠标移动分界线进行对比"` [高]
   - `FUNCTION = "compare_videos"` [高，池字符串；限定名 `TEMANVideoComparerNode.compare_videos`]
-  - `OUTPUT_NODE = True` [中，属性名 `OUTPUT_NODE` 在池中；值为布尔常量，仅强暗示]
-  - `RETURN_TYPES` / `RETURN_NAMES` 的**具体取值未确认**（值是代码常量，不产生字符串；池中有 `result`/`ui`/`a_videos`/`b_videos`/`saved_a`/`saved_b`，无 `a_video`/`b_video` 单数形式，无 `images`/`output`）。最可能形态 [低]：`{"ui": {"a_videos": [...], "b_videos": [...]}, "result": (...)}`，输出可能为空或透传 VIDEO。
+  - `OUTPUT_NODE = True` [中，属性名 `OUTPUT_NODE` 在池中；值为布尔常量，仅强暗示]。→ **已确认：`OUTPUT_NODE=True`（动态回填，实测布尔值）**
+  - `RETURN_TYPES` / `RETURN_NAMES` 的**具体取值未确认**（值是代码常量，不产生字符串；池中有 `result`/`ui`/`a_videos`/`b_videos`/`saved_a`/`saved_b`，无 `a_video`/`b_video` 单数形式，无 `images`/`output`）。最可能形态 [低]：`{"ui": {"a_videos": [...], "b_videos": [...]}, "result": (...)}`，输出可能为空或透传 VIDEO。→ **已确认（动态回填）：`RETURN_TYPES=[]`、`RETURN_NAMES=[]`——均为运行时空列表实锤**，无 VIDEO 透传输出，节点为纯 UI 输出型（与图像对比节点同款模式）。
 - 绑定的 backend：**无**（几乎无 Python 侧用户文案；全部 UI 在前端 JS）。
 
 ## 3. 节点规格（TE_image_pro_video_comparer）
@@ -35,12 +35,12 @@ ComfyUI 视频对比节点模块（节点，非支撑库）。提供单个输出
 
 | 名称 | 类型 | 组 | tooltip | 置信度 |
 |---|---|---|---|---|
-| `video_a` | `VIDEO` | optional [中] | `对比视频 A（可选）` | [高] 名称/类型/tooltip；"optional 组"[中，依 tooltip 文案"（可选）"与池中有 `optional` 键] |
-| `video_b` | `VIDEO` | optional [中] | `对比视频 B（可选）` | [高] 同上 |
+| `video_a` | `VIDEO` | optional [中] | `对比视频 A（可选）` | [高] 名称/类型/tooltip；"optional 组"[中，依 tooltip 文案"（可选）"与池中有 `optional` 键]。→ **optional 组已确认（动态回填）** |
+| `video_b` | `VIDEO` | optional [中] | `对比视频 B（可选）` | [高] 同上。→ **optional 组已确认（动态回填）** |
 
-- `hidden` 组最可能含 `prompt: "PROMPT"` 与 `extra_pnginfo: "EXTRA_PNGINFO"` [中]：池同时有参数名 `prompt`、`extra_pnginfo`（与 `compare_videos` 同簇）与类型名 `PROMPT`、`EXTRA_PNGINFO`；无 `unique_id` 字符串。具体用途未确认（猜测用于把工作流信息写入保存的预览 [低]）。
-- `required` 键同时存在 [高，池字符串]，具体放什么未确认（可能为空组，也可能是 video_a/video_b 实际在 required 组——两种排布无法从字符串区分）。
-- 无其他输入参数（池中无 default/int/float/combo 等痕迹）。
+- `hidden` 组最可能含 `prompt: "PROMPT"` 与 `extra_pnginfo: "EXTRA_PNGINFO"` [中]：池同时有参数名 `prompt`、`extra_pnginfo`（与 `compare_videos` 同簇）与类型名 `PROMPT`、`EXTRA_PNGINFO`；无 `unique_id` 字符串。具体用途未确认（猜测用于把工作流信息写入保存的预览 [低]）。→ **成员已确认（动态回填）：hidden 恰为 `{"prompt": "PROMPT", "extra_pnginfo": "EXTRA_PNGINFO"}` 两项，无 `unique_id`**。
+- `required` 键同时存在 [高，池字符串]，具体放什么未确认（可能为空组，也可能是 video_a/video_b 实际在 required 组——两种排布无法从字符串区分）。→ **已确认（动态回填）：`required` 为空 dict**，video_a/video_b 均在 optional——排布疑问就此定论。
+- 无其他输入参数（池中无 default/int/float/combo 等痕迹）。→ **已确认（动态回填）**。
 
 ### 输入/输出数据结构（Python 端 → 前端）
 
@@ -159,10 +159,54 @@ controls:['pointerdown','mousedown','dblclick'] / progressBar:['pointerdown','mo
 
 ### 明确未确认项清单
 
-1. `RETURN_TYPES`/`RETURN_NAMES` 具体取值（是否存在 VIDEO 透传输出）。
-2. video_a/video_b 究竟在 required 还是 optional 组（tooltip 文案指向 optional，但两种排布都能成立）。
-3. `hidden` 组确切的键集合（仅确认 `PROMPT`/`EXTRA_PNGINFO` 串存在；`unique_id` 不存在）。
-4. `prompt`/`extra_pnginfo` 隐藏参数在后端的具体用途。
-5. `label` 字符串的确切用途（可能用于保存文件命名或 ui 字段）。
-6. gc 保护的精确代码模式（仅 `gc`/`isenabled`/`disable`/`enable` 四串）。
-7. pyd 内异常处理的用户可见消息（未发现）。
+1. `RETURN_TYPES`/`RETURN_NAMES` 具体取值（是否存在 VIDEO 透传输出）。→ **已解决（动态回填）：均为空列表 `[]`，无透传输出**。
+2. video_a/video_b 究竟在 required 还是 optional 组（tooltip 文案指向 optional，但两种排布都能成立）。→ **已解决（动态回填）：均在 optional，required 为空 dict**。
+3. `hidden` 组确切的键集合（仅确认 `PROMPT`/`EXTRA_PNGINFO` 串存在；`unique_id` 不存在）。→ **已解决（动态回填）：恰为 `{prompt: PROMPT, extra_pnginfo: EXTRA_PNGINFO}`**。
+4. `prompt`/`extra_pnginfo` 隐藏参数在后端的具体用途。→ 仍未确认（introspection 不含方法体）。
+5. `label` 字符串的确切用途（可能用于保存文件命名或 ui 字段）。→ 仍未确认。
+6. gc 保护的精确代码模式（仅 `gc`/`isenabled`/`disable`/`enable` 四串）。→ 仍未确认。
+7. pyd 内异常处理的用户可见消息（未发现）。→ 仍未确认。
+
+## 动态 introspection 回填（Windows+ComfyUI 真机实测）
+
+> 数据来源：GitHub Actions `Windows-2025Server` + Python 3.13.16 + ComfyUI（`D:\a\_temp\ComfyUI`）真实加载本 pyd 后运行时 introspection。以下均为 `INPUT_TYPES()` 实际返回值与模块 `__dict__` 直接读出。
+
+### (a) INPUT_TYPES 实测全表
+
+```python
+{"required": {},                      # 运行时实测：空 dict
+ "optional": {
+    "video_a": ("VIDEO", {"tooltip": "对比视频 A（可选）"}),
+    "video_b": ("VIDEO", {"tooltip": "对比视频 B（可选）"})},
+ "hidden": {"prompt": "PROMPT", "extra_pnginfo": "EXTRA_PNGINFO"}}
+```
+
+实测要点：
+- `video_a` / `video_b`：均在 optional 组，VIDEO 插槽，仅带 tooltip，无 forceInput/无 UI 标志。
+- `required` 为空 dict——排布疑问（未确认项 #2）定论。
+- hidden 恰两项，无 `unique_id`（未确认项 #3 定论）。
+- 无 min/max/step 数值参数、无其他任何输入。
+
+### (b) 节点元数据实测
+
+| 项 | 实测值 |
+|---|---|
+| 注册键 | `TE_image_pro_video_comparer` |
+| 显示名 | `TE MAN 视频对比` |
+| 类名 | `TEMANVideoComparerNode`，模块 `custom_nodes.TE_image.TE_Video_Comparer` |
+| `FUNCTION` | `compare_videos` |
+| `CATEGORY` | `TE MAN/Utils` |
+| `OUTPUT_NODE` | `True`（实测布尔值）——**已确认**（正文 [中]→实锤） |
+| `RETURN_TYPES` | **`[]`（空列表）**——**已确认**：无 VIDEO 透传，纯 UI 输出节点 |
+| `RETURN_NAMES` | **`[]`（空列表）**——**已确认** |
+
+### (c) 模块常量实锤（运行时 `__dict__` 导出）
+
+模块级常量仅有 `NODE_CLASS_MAPPINGS` / `NODE_DISPLAY_NAME_MAPPINGS`（如上注册表），**无其他业务常量**——`te_man_video_compare_` 前缀、`MP4`/`H264` 编码方向等均为方法内部字面量/导入符号，不挂模块 `__dict__`。
+
+### (d) 对正文"未确认"项的核对结论
+
+- 未确认项 #1（RETURN_TYPES/RETURN_NAMES）：**已确认为空列表 `[]`**——"输出可能为空或透传 VIDEO"两说中的"空"成立，节点与图像对比节点同为 OUTPUT_NODE=True + 空 RETURN_TYPES 的纯 UI 输出模式。
+- 未确认项 #2（required/optional 排布）：**已确认 video_a/video_b 在 optional**。
+- 未确认项 #3（hidden 键集合）：**已确认恰两项、无 unique_id**。
+- 未确认项 #4/#5/#6/#7（prompt/extra_pnginfo 用途、label 用途、gc 模式、异常消息）：introspection 不含方法体，仍为未确认。

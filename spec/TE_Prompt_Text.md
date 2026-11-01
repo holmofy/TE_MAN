@@ -38,22 +38,23 @@ ComfyUI **节点模块**（不在 `__init__.py` 的 `SKIP_MODULES` 中，因此�
 pyd 中成组出现的输入构造字符串：`required`、`STRING`、`multiline`、`tooltip`、`format`?（未见）、widget 名 `text`、`reference_labels` [高；结构为推断]。结合前端 JS 引用同名 widget（`getWidgetByName(node,'text')`、`'reference_labels'`，且两个 widget 都被 `hideOriginalTextWidget` 隐藏、由 DOM 编辑器接管）：
 
 ```python
+# 已确认：与运行时 INPUT_TYPES 逐字段一致（动态回填；tooltip 含句号）
 required = {
     "text": ("STRING", {"multiline": True, "default": "",
-        "tooltip": "增强提示词文本。输入 @ 可选择下游节点已连接的图片、视频和音频引用"}),
+        "tooltip": "增强提示词文本。输入 @ 可选择下游节点已连接的图片、视频和音频引用。"}),
     "reference_labels": ("STRING", {"multiline": True, "default": "",
-        "tooltip": "由前端根据 H3 官方节点的素材连接自动生成"}),
+        "tooltip": "由前端根据 H3 官方节点的素材连接自动生成。"}),
 }
 ```
 - 中文 tooltip 原文（pyd 内完整字面量）："增强提示词文本。输入 @ 可选择下游节点已连接的图片、视频和音频引用"、"由前端根据 H3 官方节点的素材连接自动生成" [高]。
-- `default` 键存在（字符串表）；是否确实用于两参数未确认。
-- 是否还有 `optional` 输入：_unconfirmed_（JS 数组里有 `'optional'` 一词，pyd 中未检出该字符串）。
+- **已确认：两参数均含 `default: ""`（动态回填）**。
+- **已确认：无 `optional` 输入，亦无 hidden 输入（动态回填）**。
 
-### RETURN_TYPES / RETURN_NAMES（推断）
+### RETURN_TYPES / RETURN_NAMES（已确认，动态回填）
 
 - 候选字符串：`STRING`、`TE_H3_REFERENCES`、`H3参考素材`、`text` [高（字符串均存在）]。
 - 前端在 `beforeRegisterNodeDef` 中检查 `nodeData.output.includes('TE_H3_REFERENCES')` 才给节点加输出 **`H3参考素材`（类型 `TE_H3_REFERENCES`）**；TE_H3_Prompt_Enhancer 一侧则通过 `ensureH3ReferenceInput` 加同名输入 [高（JS 明文）]。
-- 推断：`RETURN_TYPES = ("STRING", "TE_H3_REFERENCES")`，`RETURN_NAMES` 含 `H3参考素材`（输出口名），第一个输入口名疑为 `text`（或"增强提示词文本"）。具体元组顺序/命名 [中]，其余细节未确认。
+- **已确认：`RETURN_TYPES = ("STRING", "TE_H3_REFERENCES")`，`RETURN_NAMES = ("text", "H3参考素材")`（动态回填）**——第一个输出口名就是 `text`（"增强提示词文本"候选不成立），元组顺序与早先推断一致。
 
 ## 3. 节点规格
 
@@ -67,7 +68,7 @@ required = {
 | `text` | STRING, multiline | 提示词正文；运行时基本由前端 DOM 编辑器 `te_prompt_editor`（`serialize:false` 的 addDOMWidget）写入，原 textarea 控件被隐藏 | widget 名 [高]，赋值机制 [中] |
 | `reference_labels` | STRING, multiline | 参考素材标记清单（如 `<Picture 1>`、`<Video 2>`、`<Audio 1>` 各占一行），由前端根据下游 H3 节点连接自动同步，用户不手填 | [高] |
 
-**输出**：`STRING`（提示词文本）+ `TE_H3_REFERENCES`（口名"H3参考素材"，与 `TE_H3_Prompt_Enhancer` 的同名输入对接）[中]。
+**输出**：**已确认 `STRING`（口名 `text`）+ `TE_H3_REFERENCES`（口名 `H3参考素材`，与 `TE_H3_Prompt_Enhancer` 的同名输入对接）**（动态回填）。另：运行时无 `OUTPUT_NODE`、无 `DESCRIPTION` 键（非输出节点，节点级描述缺省）。
 
 **关键行为（字符串流程推断）**
 1. `build_text`：把 `text`（必要时联动 `reference_labels`）整理为提示词字符串返回；同时产出 `TE_H3_REFERENCES` 输出供 H3 链路使用 [中]。pyd 中出现 `strip`、`split`、`join`、`pop`、`replace`（Cython 调用的方法名字符串），暗示对文本做行级去重/拼接（前端 JS 的 `getReferenceLabelText` 恰好是"取 insertText 去重、按行 join"）[中]。
@@ -149,3 +150,36 @@ default    output    error    request    value    labels    text
 
 ### 6.4 判非（显式否定）
 - `grep 'TE_image_pro'` 于本模块字串 → **0 处命中**：本模块不是 `TE_image_pro_*` 提示词节点族成员；save_image_with_output_core 遍历的该族类名均不在本模块内。
+
+## 7. 动态 introspection 回填（Windows+ComfyUI 真机实测）
+
+> 数据来源：GitHub Actions Windows Server 2025 + ComfyUI（Python 3.13.16）真实环境 import 后的自省结果；运行时模块显示为 `custom_nodes.TE_image.TE_Prompt_Text`（`TE_image` 为插件原名），模块文件 `D:\a\_temp\ComfyUI\custom_nodes\TE_MAN\TE_Prompt_Text.pyd`。本节所有值均为运行时实锤。
+
+### 7.1 节点 INPUT_TYPES 全表（实锤）
+
+#### TE_prompt_text（TEPromptTextNode）
+
+注册元数据：`FUNCTION = "build_text"`、`CATEGORY = "TE MAN/Utils"`、`RETURN_TYPES = ["STRING", "TE_H3_REFERENCES"]`、`RETURN_NAMES = ["text", "H3参考素材"]`；无 `OUTPUT_NODE`（非输出节点）、无节点级 DESCRIPTION、无 IS_CHANGED / VALIDATE_INPUTS / on_execute / check_lazy_status。类 docstring 为 `null`（无）。显示名（node_display_name_mappings）：`TE MAN MiniMaxH3增强提示词Prompt TEXT`。
+
+**required**：
+
+| 参数名 | 类型 | 选项 / 约束 | 默认值 | tooltip（原文摘要） |
+|---|---|---|---|---|
+| `text` | STRING, multiline | — | `""` | 增强提示词文本。输入 @ 可选择下游节点已连接的图片、视频和音频引用。 |
+| `reference_labels` | STRING, multiline | — | `""` | 由前端根据 H3 官方节点的素材连接自动生成。 |
+
+**optional / hidden**：无。
+
+### 7.2 模块常量实锤值（动态采集）
+
+pyd 模块 `TE_MAN.TE_Prompt_Text`（module docstring 为 `null`）除注册表外无业务常量：`NODE_CLASS_MAPPINGS = {"TE_prompt_text": TEPromptTextNode}`、`NODE_DISPLAY_NAME_MAPPINGS = {"TE_prompt_text": "TE MAN MiniMaxH3增强提示词Prompt TEXT"}`。模块引用 `server.PromptServer`（预览路由注册用），与 §2/§4 判断一致。
+
+### 7.3 "未确认"项核对结果
+
+| 原文位置 | 结论 |
+|---|---|
+| §2 INPUT_TYPES `default` 键是否用于两参数 | **已确认：两参数均 `default: ""`（动态回填）** |
+| §2 是否还有 optional 输入 | **已确认：无 optional、无 hidden（动态回填）**——JS 里的 `'optional'` 一词与节点输入无关 |
+| §2 `RETURN_TYPES`/`RETURN_NAMES` 顺序与命名 [中] | **已确认：`("STRING", "TE_H3_REFERENCES")` / `("text", "H3参考素材")`（动态回填）**；第一口名 `text`，"增强提示词文本"候选不成立 |
+| §3 `build_text` 内部文本整理细节（strip/split/join 等） | introspection 无 method_docs，行为细节保持原推断 |
+| §5 `PermissionError` 归属哪个消息 | introspection 不覆盖路由异常映射，保持未确认 |

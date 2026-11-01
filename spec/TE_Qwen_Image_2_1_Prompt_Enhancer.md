@@ -40,11 +40,11 @@ ComfyUI **节点模块**（不在 `__init__.py` 的 `SKIP_MODULES` 中，自动�
 ### ComfyUI 节点注册 [高（字符串）/中（键值归属)]
 
 - `NODE_CLASS_MAPPINGS` / `NODE_DISPLAY_NAME_MAPPINGS` / `CATEGORY` / `FUNCTION` / `RETURN_TYPES` / `RETURN_NAMES` / `OUTPUT_NODE` 字符串均存在。
-- 注册键：`TE_Qwen_Image_2_1_Prompt_Enhancer` [中——沿用模块名单键惯例（TE_3D_Director、TE_VEO 等 sibling spec 同构）；模块名字符串存在 [高]]。
+- 注册键：`TE_Qwen_Image_2_1_Prompt_Enhancer`（已确认，动态回填实测单键）。
 - 显示名：`TE MAN Qwen Image 2.1 AI提示词增强(本地orAPI)` [高]。
-- `CATEGORY`：`TE MAN/Prompt` [高]。
+- `CATEGORY`：`TE MAN/Prompt`（已确认，动态回填）。
 - `FUNCTION`：`enhance_prompt` [高（qualname）]。
-- 输出：`RETURN_TYPES` 含 `STRING` [中]；`RETURN_NAMES` 含 `增强提示词` [中]。元组其余成员未确认。
+- 输出：已确认 `RETURN_TYPES = ("STRING",)`、`RETURN_NAMES = ("增强提示词",)`，且 `OUTPUT_NODE = true`（动态回填）——单输出口，无 `wh_ratio`/`ratio_follow` 附加口。
 
 ## 3. 节点规格：TEQwenImage21PromptEnhancer
 
@@ -58,25 +58,27 @@ ComfyUI **节点模块**（不在 `__init__.py` 的 `SKIP_MODULES` 中，自动�
 | `任务模式` | `任务模式为文生图/图生图`（见下拉生效条件 tooltip） | 下拉：`文生图` / `图生图` [中——两值字符串均存在] |
 | `输出语言` | `控制增强提示词的描述语言`…`不要根据用户输入语言…改变这个选择` | 下拉：`中文` / `英文` [中——两值字符串均存在] |
 | `增强方式` | —— | 下拉：`API` / `本地` / `本地官方PE` [中——三值字符串均存在；显示名"(本地orAPI)"] |
-| `文生图PE模型` | `本地官方 PE 的文生图模型，增强方式选择本地官方PE且任务模式为文生图时生效` | 下拉：来自 `models/text_encoders` [高] |
-| `图生图PE模型` | `本地官方 PE 的图生图模型，增强方式选择本地官方PE且任务模式为图生图时生效` | 下拉：来自 `models/text_encoders` [高] |
-| `主模型` | `本地 Qwen 视觉模型，文件放在 ComfyUI/models/LLM/`（报错提示 `（请把模型放到 models/LLM）`） | 下拉：GGUF 来自 `models/LLM` [高] |
-| `最大生成token` | `本地模型最大生成 token。API 模式不发送此限制` | INT [中] |
-| `上下文长度` | `本地模型的 llama.cpp 上下文长度；数值越大通常占用越多显存。API 模式不使用此设置` | INT [中] |
+| `文生图PE模型` | `本地官方 PE 的文生图模型，增强方式选择本地官方PE且任务模式为文生图时生效` | 下拉：来自 `models/text_encoders` [高]；**空列表回退选项 = `（请把模型放到 models/text_encoders）`（动态回填）** |
+| `图生图PE模型` | `本地官方 PE 的图生图模型，增强方式选择本地官方PE且任务模式为图生图时生效` | 下拉：来自 `models/text_encoders` [高]；同上回退选项（动态回填） |
+| `主模型` | `本地 Qwen 视觉模型，文件放在 ComfyUI/models/LLM/`（报错提示 `（请把模型放到 models/LLM）`） | 下拉：GGUF 来自 `models/LLM` [高]；**空列表回退选项 = `（请把模型放到 models/LLM）`（动态回填）** |
+| `最大生成token` | `本地模型最大生成 token。API 模式不发送此限制` | INT：default 4096，min 256，max 32768，step 256（动态回填） |
+| `上下文长度` | `本地模型的 llama.cpp 上下文长度；数值越大通常占用越多显存。API 模式不使用此设置` | INT：default 8192，min 1024，max 327680，step 256（动态回填） |
 
-其余输入（键名出现但未在该连续块中，归属 [中/低]）：
+其余输入（动态回填后归属与键名均已确认）：
 
 | 候选键 | 证据 |
 |---|---|
-| `图生图参考图片` | 图片主输入 [中——字符串、IMAGE 类型]; tooltip 同名 |
-| `图片2`…`图片8` | 七个独立字符串逐一存在 [高]；推断为图生图的附加参考图片槽，合计 1+7=8 张（README："图生图模式支持最多 8 张参考图" [高]）；不存在 `图片1` 字符串，主图即 `图生图参考图片` [中]。组 tooltip：`图生图附加参考图片` [高] |
-| `mmproj` | `图生图模式需要选择 mmproj 视觉投影文件`、`图生图需要选择对应的视觉投影文件`、`找不到 mmproj 文件：` [高（tooltip）] |
-| `seed` | `本地模型随机种子。使用生成后控制可固定、递增、递减或随机化；API 模式不使用此设置` [高（tooltip）]；`seed` 英文键与 `control_after_generate` 字符串存在（ComfyUI seed 配件惯例，同插件 TE_VEO 同构）[中] |
-| `启用思考` | `仅本地官方 PE 生效。开启后模型先进行思考再输出提示词；关闭后直接生成提示词` [高（tooltip）]（内部 enable_thinking / force_reasoning） |
-| `生成后自动 unload`（键名未确认） | tooltip：`本地生成完成后自动卸载 Qwen 模型并释放显存` [高]；BOOLEAN [中]；日志变量 `auto_unload` [高] |
-| `API Key` / `API URL`（键名未确认） | tooltip：`API Key；留空时读取 TE MAN 的 config.ini` [高]；报错 `请在节点中填写 API Key，或在 config.ini 中配置 API Key`、`未配置有效的 API URL` [高] |
+| `图片`（optional，**键名实测为 `图片` 而非"图生图参考图片"**） | tooltip `图生图参考图片。`；图生图主图输入（动态回填更正键名） |
+| `图片2`…`图片8` | 七个 optional IMAGE 输入逐一实测（动态回填）；tooltip `图生图附加参考图片。`，合计 1+7=8 张 [高] |
+| `mmproj` | required COMBO，选项含 `无`，default=`无`；tooltip `图生图需要选择对应的视觉投影文件。`（动态回填） |
+| `seed` | required INT：default 0，min 0，max 18446744073709551615，step 1，**`control_after_generate: true`**；tooltip `本地模型随机种子。使用生成后控制可固定、递增、递减或随机化；API 模式不使用此设置`（动态回填全证实） |
+| `启用思考` | required BOOLEAN，default=false；tooltip `仅本地官方 PE 生效。开启后模型先进行思考再输出提示词；关闭后直接生成提示词。`（动态回填） |
+| `生成后自动卸载模型`（键名已确认） | required BOOLEAN，default=false；tooltip `本地生成完成后自动卸载 Qwen 模型并释放显存。`（动态回填） |
+| `api_key`（required，键名实测为小写 `api_key`） | STRING，default=""，tooltip `API Key；留空时读取 TE MAN 的 config.ini。`（动态回填） |
+| `api_base_url`（required） | STRING，default=`https://teynex.com`，非 multiline（动态回填） |
+| `model`（required） | STRING，default=`deepseek-v4.1-flash`（动态回填，`DEFAULT_API_MODEL` 实锤） |
 
-默认值/最小步长：Cython 以立即数存储，字符串表不可见——**未确认**（常量名可见：`DEFAULT_API_BASE_URL`、`DEFAULT_API_MODEL`、`DEFAULT_MAX_OUTPUT_TOKENS`、`DEFAULT_CONTEXT_LENGTH`、`DEFAULT_IMAGE_MAX_EDGE`、`DEFAULT_IMAGE_MAX_PIXELS` [高（名）]）。
+默认值/最小步长：~~Cython 以立即数存储，字符串表不可见——未确认~~ → **已全部确认（动态回填）**：`DEFAULT_API_BASE_URL="https://teynex.com"`、`DEFAULT_API_MODEL="deepseek-v4.1-flash"`、`DEFAULT_MAX_OUTPUT_TOKENS=4096`、`DEFAULT_CONTEXT_LENGTH=8192`、`DEFAULT_IMAGE_MAX_EDGE=2048`、`DEFAULT_IMAGE_MAX_PIXELS=1048576`。
 
 ### 3.2 执行流程（enhance_prompt，按字符串拓扑）
 
@@ -101,15 +103,15 @@ ComfyUI **节点模块**（不在 `__init__.py` 的 `SKIP_MODULES` 中，自动�
 
 ### 3.3 返回
 
-- `STRING`（增强后的提示词纯文本，名 `增强提示词`）[中]。是否追加 `wh_ratio`/`ratio_follow` 输出口：**未确认**（JSON 字段仅在系统提示词协议中出现，官方 PE policy 注明"节点只取 rewritten_prompt"）。
+- `STRING`（增强后的提示词纯文本，名 `增强提示词`）。已确认单输出口 `RETURN_TYPES=("STRING",)`、`RETURN_NAMES=("增强提示词",)`、`OUTPUT_NODE=true`（动态回填）；不追加 `wh_ratio`/`ratio_follow` 输出口。
 
 ## 4. 外部依赖与副作用
 
-- **网络端点** [高（串存在）/中（规则）]：OpenAI 兼容 chat API；候选路径 `/v1/chat/completions`、`/v1/responses`、`/responses`、`/v1`；特判主机 `api.deepseek.com` 与 `https://teynex.com`（插件作者中转站，`config.ini` 样例 `api_base_url = https://teynex.com` [高]；默认模型候选 `deepseek-v4.1-flash` [中]）。默认 base URL 为两者之一——**未确认**。
+- **网络端点** [高（串存在）/中（规则）]：OpenAI 兼容 chat API；候选路径 `/v1/chat/completions`、`/v1/responses`、`/responses`、`/v1`；特判主机 `api.deepseek.com` 与 `https://teynex.com`（插件作者中转站，`config.ini` 样例 `api_base_url = https://teynex.com` [高]；默认模型候选 `deepseek-v4.1-flash` [中]）。默认 base URL 为两者之一——**已确认（动态回填）：`https://teynex.com`**（`DEFAULT_API_BASE_URL` 常量实锤；默认模型 `DEFAULT_API_MODEL="deepseek-v4.1-flash"` 同步实锤）。
 - **认证**：`Authorization: Bearer <API Key>`；Key 来源优先级：节点输入 > `config.ini`（经 `config_manager.load_api_key`，`[gemini]` 段示例样例文件）；日志/请求前 `sanitize_api_key` 打码 [高]。
 - **文件系统**：
   - 读：`ComfyUI/models/LLM/`（主模型 GGUF + mmproj，`folder_paths.get_folder_paths('LLM')`）、`models/text_encoders`（官方 PE，`folder_paths.get_filename_list`，扩展名过滤 `.gguf`/`.safetensors`/`.pt/.pth/.bin` [中]）；`config.ini`；GGUF 多分片文件（`-00001-of-…`）。
-  - 写：无写文件证据——未确认（无明显的输出路径字符串）。
+  - 写：无写文件证据——introspection 亦无写文件迹象（动态回填核对，维持无写文件结论）。
 - **配置键**：`config.ini` 的 `api_key`、`api_base_url` [高；`[gemini]` 段归属沿用 api_client/config_manager 与 sibling spec]。
 - **第三方库**：`llama-cpp-python`（可选，含 multimodal handlers）、`requests`、`torch/numpy/PIL`、`comfy.*`、`folder_paths`、TE MAN `config_manager`/`logger` [高（名字符串）]。
 - **副作用**：DLL 搜索路径修改（`os.add_dll_directory`、`PATH`）；显存管理（`comfy.model_management.unload_model_and_clones/ctx_checkpoints/all_devices/soft_empty_cache`）；进程级模块缓存（Storage 单例 `should_unload/had_model/memory_clear`）[高——符号存在]。
@@ -211,3 +213,74 @@ TE Qwen Image 2.1 local model unloaded
 TE Qwen Image 2.1 API generation starting model=%s image_count=%s prompt=[%s]
 TE Qwen Image 2.1 API generation completed output=[%s]
 ```
+
+## 7. 动态 introspection 回填（Windows+ComfyUI 真机实测）
+
+> 数据来源：GitHub Actions Windows 2025 Server + Python 3.13.16 + ComfyUI 真实加载后的运行时 introspection（module 显示为 `custom_nodes.TE_image.TE_Qwen_Image_2_1_Prompt_Enhancer`）。模块文件为 `TE_Qwen_Image_2_1_Prompt_Enhancer.pyd`。
+
+### 7.1 TEQwenImage21PromptEnhancer——INPUT_TYPES 全表
+
+- FUNCTION=`enhance_prompt`；CATEGORY=`TE MAN/Prompt`；**OUTPUT_NODE=true**；`has_IS_CHANGED=false`、`has_VALIDATE_INPUTS=false`（缓存判定在 `enhance_prompt` 内部按 `_settings_signature` 处理，不依赖 IS_CHANGED）；无 `has_check_lazy_status`/`has_on_execute`。
+- RETURN_TYPES=`("STRING",)`；RETURN_NAMES=`("增强提示词",)`。
+- required：
+
+| 参数 | 类型 | 附加属性 |
+|---|---|---|
+| `输入提示词` | STRING | multiline=true，default=""，tooltip=`输入要增强的文生图或图生图需求。` |
+| `任务模式` | COMBO | `["文生图","图生图"]`，default=`文生图` |
+| `输出语言` | COMBO | `["中文","英文"]`，default=`中文`，tooltip=`控制增强提示词的描述语言。用户明确要求的画面文字保持原文。` |
+| `增强方式` | COMBO | `["本地","本地官方PE","API"]`，default=`本地` |
+| `api_key` | STRING | default=""，非 multiline，tooltip=`API Key；留空时读取 TE MAN 的 config.ini。` |
+| `api_base_url` | STRING | default=`https://teynex.com`，非 multiline |
+| `model` | STRING | default=`deepseek-v4.1-flash`，非 multiline |
+| `文生图PE模型` | COMBO | 空列表回退选项 `（请把模型放到 models/text_encoders）`，tooltip=`本地官方 PE 的文生图模型，增强方式选择本地官方PE且任务模式为文生图时生效。` |
+| `图生图PE模型` | COMBO | 同上回退选项，tooltip=`本地官方 PE 的图生图模型，增强方式选择本地官方PE且任务模式为图生图时生效。` |
+| `主模型` | COMBO | 空列表回退选项 `（请把模型放到 models/LLM）`，tooltip=`本地 Qwen 视觉模型，文件放在 ComfyUI/models/LLM/。` |
+| `mmproj` | COMBO | 选项含 `无`，default=`无`，tooltip=`图生图需要选择对应的视觉投影文件。` |
+| `最大生成token` | INT | default 4096，min 256，max 32768，step 256，tooltip=`本地模型最大生成 token。API 模式不发送此限制。` |
+| `上下文长度` | INT | default 8192，min 1024，max 327680，step 256，tooltip=`本地模型的 llama.cpp 上下文长度；数值越大通常占用越多显存。API 模式不使用此设置。` |
+| `seed` | INT | default 0，min 0，max 18446744073709551615，step 1，**control_after_generate=true**，tooltip=`本地模型随机种子。使用生成后控制可固定、递增、递减或随机化；API 模式不使用此设置。` |
+| `生成后自动卸载模型` | BOOLEAN | default=false，tooltip=`本地生成完成后自动卸载 Qwen 模型并释放显存。` |
+| `启用思考` | BOOLEAN | default=false，tooltip=`仅本地官方 PE 生效。开启后模型先进行思考再输出提示词；关闭后直接生成提示词。` |
+
+- optional（9 项图片输入）：
+
+| 参数 | 类型 | 附加属性 |
+|---|---|---|
+| `图片` | IMAGE | tooltip=`图生图参考图片。` |
+| `图片2`…`图片8` | IMAGE ×7 | tooltip=`图生图附加参考图片。` |
+
+- 无 hidden 输入；下拉枚举 `文生图PE模型/图生图PE模型/主模型/mmproj` 为动态文件列表（实测环境无对应模型文件，故显示回退占位选项——这也直接暴露了空列表 fallback 文案）。
+
+### 7.2 模块常量实锤值（modules["TE_MAN.TE_Qwen_Image_2_1_Prompt_Enhancer"].constants）
+
+| 常量 | 实测值 |
+|---|---|
+| `DEFAULT_API_BASE_URL` | `"https://teynex.com"` |
+| `DEFAULT_API_MODEL` | `"deepseek-v4.1-flash"` |
+| `DEFAULT_MAX_OUTPUT_TOKENS` | `4096` |
+| `DEFAULT_CONTEXT_LENGTH` | `8192` |
+| `DEFAULT_IMAGE_MAX_EDGE` | `2048` |
+| `DEFAULT_IMAGE_MAX_PIXELS` | `1048576` |
+| `QWEN_T2I_SYSTEM_PROMPT` | "# Image Prompt Rewriter Expert" 文生图改写系统提示词（输出 JSON `{"rewritten_prompt", "wh_ratio"}`） |
+| `QWEN_EDIT_SYSTEM_PROMPT` | "# Edit Prompt Enhancer — General (v2, 精简版)" 图生图编辑系统提示词（含双语言决策 A/B、`<image1>/<image2>` 多图标注、`wh_ratio`/`ratio_follow` 互斥规则） |
+| `QWEN_OUTPUT_POLICY` | "Node output controls"：`输出语言` 为描述语言最高依据；只输出纯文本 |
+| `QWEN_OFFICIAL_PE_POLICY` | "Official PE output protocol"：官方 PE 内部仍输出 JSON，节点只取 `rewritten_prompt` |
+| `NODE_CLASS_MAPPINGS` | `{"TE_Qwen_Image_2_1_Prompt_Enhancer": TEQwenImage21PromptEnhancer}`（单键） |
+| `NODE_DISPLAY_NAME_MAPPINGS` | `{"TE_Qwen_Image_2_1_Prompt_Enhancer": "TE MAN Qwen Image 2.1 AI提示词增强(本地orAPI)"}` |
+| `PLUGIN_DIR` | `D:\a\_temp\ComfyUI\custom_nodes`（运行时值）；`MODULE_DIR` = `...\custom_nodes\TE_MAN` |
+
+### 7.3 对正文"未确认"项的核对结论
+
+| 正文位置 | 结论 |
+|---|---|
+| §2 注册键 [中] | 已确认：`TE_Qwen_Image_2_1_Prompt_Enhancer`（动态回填） |
+| §2 输出元组其余成员未确认 | 已确认：单输出口 `("STRING",)` × `("增强提示词",)`，OUTPUT_NODE=true |
+| §3.1 各 INT 默认值/min-max 未确认 | 已确认：`最大生成token` 4096(256-32768,step256)、`上下文长度` 8192(1024-327680,step256)、`seed` 0(0-2^64-1,step1,control_after_generate) |
+| §3.1 `图生图参考图片` 键名 [中] | 更正：主图键名为 `图片`（"图生图参考图片"只是 tooltip） |
+| §3.1 `API Key`/`API URL` 键名未确认 | 已确认：`api_key` / `api_base_url`（小写英文键） |
+| §3.1 `生成后自动 unload` 键名未确认 | 已确认：`生成后自动卸载模型`，BOOLEAN default false |
+| §3.1 常量默认值 6 项 | 已确认（见 7.2 表） |
+| §3.3 是否追加 wh_ratio/ratio_follow 输出口未确认 | 已确认：不追加 |
+| §4 默认 base URL 未确认 | 已确认：`https://teynex.com` |
+| §3.2 端点归一化规则未确认 | 保留未确认（introspection 不含函数体） |

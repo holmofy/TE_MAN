@@ -58,9 +58,9 @@
 
 | 名称 | 值 | 证据 | 置信度 |
 |---|---|---|---|
-| `GRID_SEPARATOR_LUMA_THRESHOLD` | `26` (int) | 初始化序列 `mov $0x1a,%ecx; call PyLong_FromLong; → 缓存槽 0x1c2f0`，随后 `PyDict_SetItem(模块字典, 名槽 0x1bea8=GRID_SEPARATOR_LUMA_THRESHOLD, 该槽)` | 高 |
-| `GRID_SEPARATOR_DARK_RATIO_THRESHOLD` | `0.9` (float) | `movsd 0x17ee0(=0.9); call PyFloat_FromDouble → 槽 0x1c290`，接着 `PyDict_SetItem(名槽 0x1bea0=GRID_SEPARATOR_DARK_RATIO_THRESHOLD, 0x1c290)` | 高 |
-| `GRID_SEPARATOR_MIN_BAND_THICKNESS` | `2` (int) | `mov $0x2,%ecx; call PyLong_FromLong → 槽 0x1c2c8`，`PyDict_SetItem(名槽 0x1beb0=GRID_SEPARATOR_MIN_BAND_THICKNESS, 0x1c2c8)` | 高 |
+| `GRID_SEPARATOR_LUMA_THRESHOLD` | `26` (int) | 初始化序列 `mov $0x1a,%ecx; call PyLong_FromLong; → 缓存槽 0x1c2f0`，随后 `PyDict_SetItem(模块字典, 名槽 0x1bea8=GRID_SEPARATOR_LUMA_THRESHOLD, 该槽)`；**运行时实测同值 26（动态回填）** | 高 |
+| `GRID_SEPARATOR_DARK_RATIO_THRESHOLD` | `0.9` (float) | `movsd 0x17ee0(=0.9); call PyFloat_FromDouble → 槽 0x1c290`，接着 `PyDict_SetItem(名槽 0x1bea0=GRID_SEPARATOR_DARK_RATIO_THRESHOLD, 0x1c290)`；**运行时实测同值 0.9（动态回填）** | 高 |
+| `GRID_SEPARATOR_MIN_BAND_THICKNESS` | `2` (int) | `mov $0x2,%ecx; call PyLong_FromLong → 槽 0x1c2c8`，`PyDict_SetItem(名槽 0x1beb0=GRID_SEPARATOR_MIN_BAND_THICKNESS, 0x1c2c8)`；**运行时实测同值 2（动态回填）** | 高 |
 
 名槽定位方法：Cython 字符串表基址 `0x180017060`（每项 `{const char* s; len|flags}` 0x10 字节，初始化循环把 PyUnicode 顺序写入槽数组 `0x18001be80 + 8*i`）；表内序号 4/5/6 分别为 `GRID_SEPARATOR_DARK_RATIO_THRESHOLD`（len 36）/`GRID_SEPARATOR_LUMA_THRESHOLD`（len 30）/`GRID_SEPARATOR_MIN_BAND_THICKNESS`（len 34）。
 
@@ -146,3 +146,31 @@ rows 和 cols 必须大于 0
 ### 6.6 关联文件链
 - 调用方：`grid_split_routes.py`（明文双胞胎）L17 `from .grid_split_core import split_image_to_grid_input_files`；L106 `images = split_image_to_grid_input_files(image_info=image_info, rows=rows, cols=cols)`；响应 L107 `{"success": True, "images": images}` → 每项即本模块返回的 `{"filename","subfolder","type":"input"}`。
 - 共享依赖：`save_image_with_output_core.pyd` 的 `resolve_image_info_path`。
+
+## 动态 introspection 回填（Windows+ComfyUI 真机实测）
+
+> 数据源：GitHub Actions Windows + ComfyUI 真实环境运行时 introspection 快照，目标文件 `D:\a\_temp\ComfyUI\custom_nodes\TE_MAN\grid_split_core.pyd`。以下为运行时模块属性/命名空间实测。
+
+### (a) 模块 docstring
+模块级 `__doc__` 为空（本模块无模块级/类级自述文案；模块命名空间中唯一带 docstring 的类是 `pathlib.Path` 导入）。
+
+### (b) 模块级常量（实锤值）——三个黑线检测阈值全部实锤
+| 常量 | 运行时实测值 | 与静态反汇编结论比对 |
+|---|---|---|
+| `GRID_SEPARATOR_LUMA_THRESHOLD` | `26` | ✅ 与 §3 反汇编 `0x1a` 一致 |
+| `GRID_SEPARATOR_DARK_RATIO_THRESHOLD` | `0.9` | ✅ 与 §3 `movsd 0x17ee0` 一致 |
+| `GRID_SEPARATOR_MIN_BAND_THICKNESS` | `2` | ✅ 与 §3 `mov $0x2` 一致 |
+
+静态与动态双通道交叉证实，**黑线检测三参数正式定案**：像素亮度 ≤26 判暗（0–255 尺度，BT.709 luma）、暗带内暗像素占比 ≥0.9、暗带最小厚度 ≥2px。正文 §3 各参数引用处的 [高] 判定获得运行时直接证据背书。
+
+**关键负证据**：模块常量表中**无**其他 GRID_* 或阈值常量（`0.02`、`24.0`、`4.0` 等 §3 末段"角色未映射"的常量池数值均未成为模块级名字）——维持"它们是函数内局部立即数"的判断，其用途（`min_allowed_width/height` 缩放等）仍属推断。
+
+### (c) function_docs（编译保留的 docstring）
+模块命名空间中带 docstring 的对象仅捕获到 typing 导入名（`Any`/`Dict`/`List`/`Optional`/`Sequence`/`Tuple`）与 `pathlib.Path`。业务函数（`split_image_to_grid_input_files` 等 10 个）无 docstring 保留，无新增函数文档。typing 名单佐证 §2 的注解推断：`Optional/Tuple/Dict/Any/List/Sequence` 六个名字确以模块级导入存在，"应有类型注解"的推断获得命名空间侧证。
+
+### (d) 未确认项核对结论
+- 三个 GRID_* 阈值：**3/3 已确认**（26 / 0.9 / 2，静态+动态双证）。
+- `split_image_to_grid_input_files` 具体类型注解内容：维持未确认（名字存在、注解对象未导出）。
+- `min_allowed_width/height`、`0.02/0.2/24.0/4.0` 等局部数值的角色：维持未确认（且新增负证据：非模块级常量）。
+- 文件名拼接方式（`_grid_` + `02d` + `uuid4` 是否用于防重）：维持未确认。
+- 路径解析分工（`save_image_with_output_core.resolve_image_info_path` 复用）：维持 [中]（运行时命名空间显示 `Path` 为模块级导入，与 pathlib 路径操作证据一致；共享解析函数属跨模块调用，不在本模块命名空间）。

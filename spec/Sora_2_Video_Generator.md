@@ -47,40 +47,39 @@ TE_MAN 插件的 **ComfyUI 视频生成节点模块**（会被 `__init__.py` 的
 
 | 键（推断） | 值 | 证据 |
 |---|---|---|
-| `NODE_CLASS_MAPPINGS` 键 | `BananaSora2VideoNode` | 字符串 `NODE_CLASS_MAPPINGS` + 类名 |
-| `NODE_CLASS_MAPPINGS` 值（键名） | `TE_image_pro_sora2_video` | 字符串（旧 `TE_image` 系命名残留，参考同类节点键名风格）[中] |
-| `NODE_DISPLAY_NAME_MAPPINGS` 显示名 | `TE MAN sora2 video` | 字符串 [高，键值绑定 未确认] |
-| `CATEGORY` | `TE MAN/Sora` | 字符串 |
-| `FUNCTION` | `generate_video` | 字符串 |
+| `NODE_CLASS_MAPPINGS` 键 | `BananaSora2VideoNode`（pyd 基类；**运行时实际注册为 SafePy 包装类 `TE_MAN.Grok_Safe_PY.BananaSora2VideoSafePyNode`，已确认，动态回填**） | 字符串 `NODE_CLASS_MAPPINGS` + 类名 |
+| `NODE_CLASS_MAPPINGS` 值（键名） | `TE_image_pro_sora2_video` | **已确认（动态回填）** |
+| `NODE_DISPLAY_NAME_MAPPINGS` 显示名 | `TE MAN sora2 video` | 字符串 [高]；**键值绑定已确认（动态回填）** |
+| `CATEGORY` | `TE MAN/Sora` | **已确认（动态回填）** |
+| `FUNCTION` | `generate_video` | **已确认（动态回填）** |
+| `OUTPUT_NODE` | `True` | **已确认（动态回填）** |
 
 ## 3. 节点规格（BananaSora2VideoNode）
 
 ### 3.1 输入参数
 
-参数名与类型标记均来自字符串证据；分组（required/optional 顺序）与默认值多为推断，单数、轮询参数具体 数值 未确认。
+参数名与类型标记均来自字符串证据；分组与默认值原为推断，**现已由动态回填（§7.2）全部实锤**——下表保留原证据链并逐项标注回填结论。
 
 | 参数 | 类型/选项 | 证据 | 推断 |
 |---|---|---|---|
-| `prompt` | STRING（`multiline`） | 「用于生成视频的提示词」tooltip、「请输入 prompt」校验、`prompt_text` 局部名 | 必填 [中]；空值报「请输入 prompt」[中]；默认值可能为内置猫片示例句 [低] |
-| `model` | STRING | 「模型名称，默认 sora-2」tooltip；`_DEFAULT_MODEL`=`sora-2`；`effective_model` 局部名 | 默认 `sora-2`；无其他模型字面量（如 sora-2-pro 不存在）[高] |
-| `aspect_ratio` | STRING 选项集 | 二进制字面量仅 `16:9`、`9:16` 两个比例串 | 选项 likely `[16:9, 9:16]`，顺序未确认；其他选项（如 1:1）不存在 [高（负证据）] |
-| `resolution` | STRING 选项集 | 二进制字面量仅 `720p`（`/v1/videos` 紧邻处） | `720p` 为可选值（likely 默认）；完整选项列表 未确认（未发现 1080p/480p/auto）[中] |
-| `seconds` | INT 或 STRING | 「视频时长（秒）」tooltip；`seconds_value` 局部名；独立字符串 `"12"` 存在 | 时长选项可能含 `12`（Sora 系 4/8/12 档，仅 `"12"` 字面量存在）[低]；类型/默认 未确认 |
-| `seed` | INT + `control_after_generate` | 0x19f40 处 `prompt, model, aspect_ratio, resolution, seconds, seed` 参数名序列 [高]；字符串 `control_after_generate`；tooltip「仅供 ComfyUI 工作流使用；不会写入请求体」 | ComfyUI 种子，不进请求体 [高（tooltip 原文）] |
+| `prompt` | STRING（`multiline`） | 「用于生成视频的提示词」tooltip、「请输入 prompt」校验、`prompt_text` 局部名 | 必填 [中]；空值报「请输入 prompt」[中]；**默认值已确认 = 内置猫片示例句（动态回填）** |
+| `model` | STRING | 「模型名称，默认 sora-2」tooltip；`_DEFAULT_MODEL`=`sora-2`；`effective_model` 局部名 | 默认 `sora-2` **已确认（动态回填）**；无其他模型字面量（如 sora-2-pro 不存在）[高] |
+| `aspect_ratio` | ["16:9","9:16"] 下拉 | 二进制字面量仅 `16:9`、`9:16` 两个比例串 | 选项与顺序 **已确认 `[16:9, 9:16]`，默认 `16:9`（动态回填）**；其他选项不存在 [高（负证据）] |
+| `resolution` | ["720p"] 下拉 | 二进制字面量仅 `720p`（`/v1/videos` 紧邻处） | **已确认：单枚举 `["720p"]`，默认 `720p`（动态回填）** |
+| `seconds` | ["4","8","12"] 下拉 | 「视频时长（秒）」tooltip；`seconds_value` 局部名 | **已确认：STRING 单选 `["4","8","12"]`，默认 `"8"`（动态回填，原"仅 12 字面量"推断修正为完整三档）** |
+| `seed` | INT + `control_after_generate`（optional） | 0x19f40 处 `prompt, model, aspect_ratio, resolution, seconds, seed` 参数名序列 [高]；字符串 `control_after_generate`；tooltip「仅供 ComfyUI 工作流使用；不会写入请求体」 | **已确认：默认 `-1`，min `-1` / max `102400`，control_after_generate 开启（动态回填）**；不进请求体 [高（tooltip 原文）] |
 | `image`（IMAGE） | IMAGE（optional） | 「参考图片（可选），接入后走图生视频，写入 image_url」tooltip；局部 `image_tensor / has_image / image_url`；请求体含 `image_url` 字段 [高] | 图生视频，编码为 data URL 写入 `image_url`；不传时走文生视频 [高] |
-| `api_key` | STRING | 「API Key；留空则读取 config.ini」tooltip；`_resolve_key_and_url` 回退 `config_manager.load_api_key` | 留空读 config.ini `[gemini] api_key` [高] |
-| `api_url` | STRING | 「服务地址，如 https://socdabat.it.com（不要带 /v1/videos）」tooltip；回退 `config_manager.get_effective_api_base_url` [中] | 中转站 base URL；节点自行拼接 `/v1/videos` [高] |
-| `timeout_s`（名 未确认，candidates：`timeout_s / timeout`） | INT 或 FLOAT | 「总超时（秒），包含创建任务」tooltip；`timeout_s` 局部名贯穿下载/轮询 | 总超时，覆盖创建+轮询+下载 [高（语义）/名 [中]] |
-| `poll_interval_s`（名 未确认） | 数字 | 字符串 `poll_interval_s`（两处） | 轮询间隔秒，默认值 未确认 |
-| `bypass_proxy` | BOOLEAN | 「需要忽略系统代理/梯子时开启」tooltip；局部 `bypass_proxy / trust_env / enable / session` | bypass_proxy=True 时 requests.Session `trust_env=False`（绕过系统代理）[中] |
+| `api_key` | STRING（**required**） | 「API Key；留空则读取 config.ini」tooltip；`_resolve_key_and_url` 回退 `config_manager.load_api_key` | 留空读 config.ini `[gemini] api_key` [高]；**已确认归入 required 分组、默认空串（动态回填）** |
+| `api_base_url`（正文原记 `api_url`） | STRING（**required**） | 「服务地址，如 https://socdabat.it.com（不要带 /v1/videos）」tooltip；回退 `config_manager.get_effective_api_base_url` [中] | **已确认：最终 UI 形参名为 `api_base_url`（默认空串），`api_url` 为内部局部名（动态回填）**；中转站 base URL；节点自行拼接 `/v1/videos` [高] |
+| `timeout_s` | INT（optional） | 「总超时（秒），包含创建任务」tooltip；`timeout_s` 局部名贯穿下载/轮询 | **已确认：参数名 `timeout_s`，默认 `900`，min 30 / max 3600（动态回填）**；覆盖创建+轮询+下载 [高] |
+| ~~`poll_interval_s`~~（不暴露） | — | 字符串 `poll_interval_s`（两处） | **已确认：字符串存在但不在 INPUT_TYPES 中——轮询间隔为内部值，非用户输入（动态回填）** |
+| `绕过代理`（正文原记 `bypass_proxy`） | BOOLEAN（optional） | 「需要忽略系统代理/梯子时开启」tooltip；局部 `bypass_proxy / trust_env / enable / session` | bypass_proxy=True 时 requests.Session `trust_env=False`（绕过系统代理）[中]；**已确认：UI 形参名 `绕过代理`，默认 `false`（动态回填）** |
 
 INPUT_TYPES 结构字面量佐证：`required / optional / default / tooltip / multiline` 字符串齐全 [高]。
 
 ### 3.2 输出
 
-- `RETURN_TYPES` [中]：运行时二选一——检测 `_HAS_COMFY_VIDEO`（探测 `comfy.comfy_types` / `comfy_api.input_impl` 与 `VideoFromFile`）：可用时返回 ComfyUI 视频对象（`VIDEO` 类型，`VideoFromFile` 包装本地文件）；不可用时回退字符串路径（存在 `STRING` 字面量与 `video_path` 局部名）。具体回退形态 未确认。
-- `RETURN_NAMES`：候选 `video / video_path / video_url`（均有字符串），绑定关系 未确认。
-- `OUTPUT_NODE = True` [中]（字面量存在；节点会下载并保存文件，符合 OUTPUT_NODE 语义）。
+- **已确认（动态回填）：`RETURN_TYPES = [VIDEO, STRING, STRING]`，`RETURN_NAMES = ["video", "video_url", "response"]`，`OUTPUT_NODE = True`**。`_HAS_COMFY_VIDEO = True`（运行环境装有 ComfyUI 视频类型，返回 `VideoFromFile` 包装的本地 mp4；`video_url` 输出下载地址，`response` 输出响应摘要）。正文原"回退字符串路径/video_path"推断在标准 ComfyUI 环境下不触发，回退分支仍不可见。
 
 ### 3.3 关键行为流程（generate_video）
 
@@ -191,7 +190,7 @@ comfy.comfy_types   comfy_api.input_impl   VideoFromFile   VIDEO   _HAS_COMFY_VI
 prompt  model  aspect_ratio  resolution  seconds  seed   [(INPUT_TYPES 形参序)]
 IMAGE   BOOLEAN   STRING   INT   poll_interval_s   bypass_proxy   trust_env
 ```
-字面量选项：`16:9` / `9:16`（比例）、`720p`（分辨率）、`"12"`（时长相关，语义未确认）；未发现 `1:1 / 1080p / auto / portrait / landscape / sora-2-pro`。
+字面量选项：`16:9` / `9:16`（比例）、`720p`（分辨率）、`"12"`（时长档之一）；未发现 `1:1 / 1080p / auto / portrait / landscape / sora-2-pro`。→ 运行时实锤见 §7.2：`seconds` 完整枚举为 `["4","8","12"]`。
 
 ### 协议字段/状态字面量
 ```
@@ -236,3 +235,65 @@ API URL: [已脱敏]   未配置有效的 API URL   API URL   API Key   config.i
 _DEFAULT_MODEL = sora-2   (effective_model)
 默认示例 prompt: A cinematic orange cat walking slowly through a rainy neon street at night.
 ```
+
+## 7. 动态 introspection 回填（Windows+ComfyUI 真机实测）
+
+> 数据来源：GitHub Actions 真实环境（`Windows-2025Server-10.0.26100`，Python 3.13.16，ComfyUI 目录 `D:\a\_temp\ComfyUI`，插件包 `custom_nodes/TE_MAN`）运行时 introspection 导出（`te_man_introspection.json`）。
+> **包装层说明（重点）**：Sora_2_Video_Generator.pyd 的 `BananaSora2VideoNode` 是 pyd 基类；运行时 ComfyUI 实际注册的类是明文包装层 `Grok_Safe_PY.py` 中的 **`TE_MAN.Grok_Safe_PY.BananaSora2VideoSafePyNode`**（SafePy 类包装 pyd 基类）。`Grok_Safe_PY` 模块自身的 `NODE_CLASS_MAPPINGS` 运行时为空 dict，最终由 pyd 模块侧完成注册映射 `TE_image_pro_sora2_video → BananaSora2VideoSafePyNode`。下表即包装层最终暴露的参数表（SafePy 透传基类 INPUT_TYPES，无增减）。
+
+### 7.1 节点注册（运行时实锤）
+
+| 项 | 值 |
+|---|---|
+| 注册名 | `TE_image_pro_sora2_video` |
+| 运行时类 | `TE_MAN.Grok_Safe_PY.BananaSora2VideoSafePyNode`（包装 pyd 基类 `custom_nodes.TE_image.Sora_2_Video_Generator.BananaSora2VideoNode`） |
+| 显示名 | `TE MAN sora2 video` |
+| `FUNCTION` | `generate_video` |
+| `CATEGORY` | `TE MAN/Sora` |
+| `OUTPUT_NODE` | `True` |
+| 节点 doc | 无（`doc = null`，pyd 基类 docstring 未透出） |
+
+pyd 模块常量实锤（`TE_MAN.Sora_2_Video_Generator`）：
+
+```
+NODE_CLASS_MAPPINGS        = {TE_image_pro_sora2_video: BananaSora2VideoNode}   # pyd 侧原始映射
+NODE_DISPLAY_NAME_MAPPINGS = {TE_image_pro_sora2_video: TE MAN sora2 video}
+MODULE_DIR                 = D:\a\_temp\ComfyUI\custom_nodes\TE_MAN
+_DEFAULT_MODEL             = "sora-2"
+_HAS_COMFY_VIDEO           = True
+```
+
+### 7.2 INPUT_TYPES 全表（运行时实锤，包装层最终暴露参数表）
+
+**required：**
+
+| 参数 | 类型 | 枚举/约束 | 默认值 | tooltip 摘要 |
+|---|---|---|---|---|
+| `prompt` | STRING | multiline | `A cinematic orange cat walking slowly through a rainy neon street at night.` | 用于生成视频的提示词 |
+| `api_key` | STRING | 单行 | `""` | API Key；留空则读取 config.ini |
+| `api_base_url` | STRING | 单行 | `""`（空 = 走 config.ini） | 服务地址，如 https://socdabat.it.com（不要带 /v1/videos） |
+| `model` | STRING | 单行 | `sora-2` | 模型名称，默认 sora-2 |
+| `aspect_ratio` | ["16:9","9:16"] | 下拉 | `"16:9"` | 画面比例 |
+| `resolution` | ["720p"] | 下拉（单枚举） | `"720p"` | 分辨率 |
+| `seconds` | ["4","8","12"] | 下拉 | `"8"` | 视频时长（秒） |
+
+**optional：**
+
+| 参数 | 类型 | 约束 | 默认值 | tooltip 摘要 |
+|---|---|---|---|---|
+| `seed` | INT | min -1 / max 102400，`control_after_generate` 开启 | `-1` | 仅供 ComfyUI 工作流使用；不会写入请求体 |
+| `image` | IMAGE | — | — | 参考图片（可选），接入后走图生视频，写入 image_url |
+| `timeout_s` | INT | min 30 / max 3600 | `900` | 总超时（秒），包含创建任务、轮询和下载 |
+| `绕过代理` | BOOLEAN | — | `false` | 需要忽略系统代理/梯子时开启 |
+
+**未暴露项修正**：`poll_interval_s` 字符串存在于 pyd 内部但不作为 UI 输入暴露（轮询间隔为内部固定值）；正文原记形参名 `api_url` → 实际为 `api_base_url`，`bypass_proxy` → 实际 UI 名 `绕过代理`。
+
+### 7.3 返回值（运行时实锤）
+
+`RETURN_TYPES = [VIDEO, STRING, STRING]`，`RETURN_NAMES = ["video", "video_url", "response"]`，`OUTPUT_NODE = True`。正文 §3.2 的"回退字符串路径"分支在标准环境（`_HAS_COMFY_VIDEO=True`）下不生效。
+
+### 7.4 回填后仍未确认项
+
+- 轮询间隔内部固定值（`poll_interval_s` 的默认秒数）——非 UI 参数，函数体不可见。
+- `_HAS_COMFY_VIDEO=False` 时的回退返回形态——真机环境恒为 True，未触发。
+- 轮询端点 `{提交端点}/{task_id}` 的精确拼法（含 `video_id` 局部名的分支）——函数体不可见。

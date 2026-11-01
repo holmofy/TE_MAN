@@ -226,3 +226,32 @@ filterwarnings   InsecureRequestWarning   urllib3   disable_warnings
 - 编译源：`F:\ComfyUI_portable_TE_v260130\ComfyUI\custom_nodes\TE_image\source_py_backup\api_client.c` [高]
 - 日志命名空间线索：`comfyui-te_api` [中]；外部配置引用：`config_manager` [高]
 - 默认模型线索：`nano-banana-2` [中]；宽高比别名值与 `1K 2K 4K auto` 见 §3.1
+
+## 动态 introspection 回填（Windows+ComfyUI 真机实测）
+
+> 数据源：GitHub Actions Windows + ComfyUI 真实环境运行时 introspection 快照，目标文件 `D:\a\_temp\ComfyUI\custom_nodes\TE_MAN\api_client.pyd`。以下为运行时模块属性/命名空间实测。
+
+### (a) 模块 docstring
+模块级 `__doc__` 为空。运行时证实正文引用的"封装与 Gemini 兼容图像接口交互的 HTTP 客户端"实为**类 `GeminiApiClient` 的 docstring**（原文：`封装与 Gemini 兼容图像接口交互的 HTTP 客户端。`），类的 `__module__` 报 `custom_nodes.TE_image.api_client`（编译期包名保留，真机目录已是 TE_MAN）。
+
+### (b) 模块级常量（实锤值）
+运行时模块常量表仅含：
+| 常量 | 实测值 | 说明 |
+|---|---|---|
+| `MODULE_DIR` | `D:\a\_temp\ComfyUI\custom_nodes\TE_MAN` | 真机运行目录 |
+
+**关键负证据**：`_DEFAULT_CONNECT_TIMEOUT`、`_DEFAULT_READ_TIMEOUT`、`_MAX_RETRIES`、`_BASE_BACKOFF`、`_RETRYABLE_STATUS`、`_ASPECT_RATIO_ALIASES`、`_DEBUG_BASE64_KEYS`、`_INSECURE_WARNING_SUPPRESSED` 等常量名**未出现在模块级命名空间**——说明它们是**类属性或函数局部实现细节**（挂靠在 `GeminiApiClient` 上），而非模块级常量；数值仍未实测（此批 introspection 未下钻类属性）。"候选集具体列表未确认"（余额 URL、`_RETRYABLE_STATUS` 成员）维持未确认，但**归属层级已修正：类属性级，非模块级**。
+
+### (c) function_docs（编译保留的 docstring）
+模块命名空间中带 docstring 的对象仅捕获到 typing 导入名（`Any`/`Callable`/`Dict`/`List`/`Optional`/`Tuple`），业务函数无 docstring 保留，无新增。
+类级命名空间实锤（imports 类文档）：
+- `GeminiApiClient`：本模块自有类（doc 见上）。
+- `HTTPAdapter`（`requests.adapters`）：完整 docstring 命中，其中参数文档 `pool_connections`（"The number of urllib3 connection pools to cache"）、`pool_maxsize`（"The maximum number of connections to save in the pool"）与 §3.5 `_get_session()` 的连接池参数一一对应——佐证连接池配置确实经 `HTTPAdapter(mount(...))` 注入。
+- `InsecureRequestWarning`（`urllib3.exceptions`）：佐证 §3.5 `_suppress_insecure_warning` 的屏蔽对象。
+
+### (d) 未确认项核对结论
+- `__all__` 存在但内容未确认：维持（introspection 未导出该列表）。
+- 超时/重试常量数值：**未确认（新增归属证据：非模块级，应在类属性中查找）**。
+- 默认模型 `nano-banana-2` [中]：维持——运行时常量表中无该字符串常量（若为参数默认值则属函数签名默认，无法由此批数据证实）。
+- Gemini 原生接口 key 传递方式：维持未确认。
+- 佐证（consumers）：`nodes` 数据显示 `TE_image_pro_gpt_image_2`、`TE_image_pro_grok_image`、`TE_image_pro_grok_video`、`TE_image_pro_banana`、`TE_image_pro_sora2_video`、`TE_image_pro_happyh_video`、`TE_image_pro_te_veo_video`、`TE_image_pro_special_async2` 共 8 个注册节点的 `module` 字段同为 `TE_MAN.Grok_Safe_PY`——Grok_Safe_PY 是 api_client 的最大单一消费者聚合层（与静态"全部生成器共用网络层"结论吻合）。

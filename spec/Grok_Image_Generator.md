@@ -224,3 +224,61 @@ throw_exception_if_processing_interrupted  _ensure_not_interrupted  _DummyPrompt
 ```bash
 strings -n 5 /Users/holmofy/Downloads/TE_MAN/Grok_Image_Generator.pyd | grep -E 'grok-imagine|/v1/|TE_image_pro_grok|QUICK_'
 ```
+
+## 7. 动态 introspection 回填（Windows+ComfyUI 真机实测）
+
+> 数据来源：GitHub Actions Windows 环境真实加载采集（`Windows-2025Server-10.0.26100`，Python 3.13.16，ComfyUI 目录 `D:\a\_temp\ComfyUI`，TE_MAN 无导入错误）。实际注册类是明文包装层 `TE_MAN.Grok_Safe_PY.BananaGrokImageSafePyNode`（经 `zzzz_grok_autoscale_patch` 以同名注册键覆盖），下表为**包装层最终暴露**的完整参数表；pyd 基类 `BananaGrokImageNode` 的内部行为（端点、payload、解析）不受包装层影响。
+
+### 7.1 运行时 INPUT_TYPES 全表（`TE_image_pro_grok_image`，包装层暴露）
+
+**required：**
+
+| 参数 | 类型 | 选项 / 默认值 | 约束 | tooltip（原文） |
+|---|---|---|---|---|
+| `prompt` | STRING multiline | 默认 `生成一张可爱的小猫图片` | `defaultInput: true` | `用于生成图片的提示词` |
+| `api_key` | STRING | 默认 `""` | — | `API Key；留空则读取 config.ini 的 gemini.api_key（如你复用同一套配置）` |
+| `api_base_url` | STRING | 默认 `""` | — | `服务地址，如 http://localhost:8000（不要带 /v1/chat/completions）` |
+| `image_count` | INT | 默认 `1` | min 1 / max 10 | `目标图片张数，对应 image_config.n` |
+| `size` | combo | `1024x1024, 1280x720, 720x1280, 1792x1024, 1024x1792`（**顺序实锤**），默认 `1024x1024` | — | `图片尺寸，对应 image_config.size` |
+
+**optional：**
+
+| 参数 | 类型 | 选项 / 默认值 | 约束 | tooltip（原文） |
+|---|---|---|---|---|
+| `seed` | INT | 默认 `-1` | min -1 / max 102400 / `control_after_generate: true` | `仅供 ComfyUI 工作流使用；不会写入请求体` |
+| `image` | IMAGE | — | — | `参考/编辑输入图片（可选）。填写时会以多模态 messages 方式发给 /v1/chat/completions。` |
+| `image_2` | IMAGE | — | — | `第二路参考/编辑输入图片（可选）。` |
+| `image_3` | IMAGE | — | — | `第三路参考/编辑输入图片（可选）。` |
+| `timeout_s` | INT | 默认 `180` | min 30 / max 3600 | `请求超时（秒）` |
+| `绕过代理` | BOOLEAN | 默认 `false` | — | `需要忽略系统代理/梯子时开启` |
+| `快捷功能` | combo | `无, 白底三视图, 白底四视图, 九宫格[剧情]分镜, 九宫格[场景]分镜, 四宫格[剧情]分镜, 四宫格[视角]分镜`（7 项），默认 `无` | — | `使用快捷功能生成。` |
+
+**运行时未暴露**：`图生图image_url格式测试`（§3.1 表最后一行）不在包装层 INPUT_TYPES 中——该参数名仅以包装层常量 `Grok_Safe_PY._EDIT_IMAGE_URL_FORMAT_OPTION_NAME = "图生图image_url格式测试"` 存续，前端已不可选；基类内部对应逻辑保留但入口被包装层裁剪。
+
+**注册元数据（实锤）**：`FUNCTION = "generate_images"`、`CATEGORY = "TE MAN/Grok"`、`OUTPUT_NODE = True`、`RETURN_TYPES = ["IMAGE", "STRING"]`、`RETURN_NAMES = ["images", "text"]`；无 IS_CHANGED / VALIDATE_INPUTS / check_lazy_status。`method_docs`：`generate_single_image` → `生成单张图片（用于并发）`。
+
+### 7.2 模块常量实锤值（动态采集）
+
+pyd 模块 `TE_MAN.Grok_Image_Generator`：
+- `_MAX_INPUT_IMAGE_MEGAPIXELS = 1.0`；`_OFFICIAL_SCALE_METHOD = "nearest-exact"`
+- `_IMAGE_DOWNLOAD_CACHE_MAX = 16`（§3.6 LRU 容量定值）；`_DATA_URI_PREFIX = "data:image"`；`_IMAGE_DOWNLOAD_CACHE = {}`
+- `QUICK_FUNCTION_NONE = "无"`；`QUICK_FUNCTION_OPTIONS` = 上表 7 项；`QUICK_FUNCTION_PREFIXES` 完整映射：`白底三视图` → 短模板 `三视图（正面、侧面、背面），白色纯色背景，人物角色设计图，`；`白底四视图` → 长模板 `参照原图生成人物面部特写搭配全身三视图组合画面；…`；其余 4 项分镜模板与 §6.5 原文一致；`无` → `""`
+- `NODE_CLASS_MAPPINGS["TE_image_pro_grok_image"] = custom_nodes.TE_image.Grok_Image_Generator.BananaGrokImageNode`、显示名 `TE MAN Grok Image`（基类层注册，随后被包装层覆盖为 SafePy 类）
+
+包装层 `TE_MAN.Grok_Safe_PY`：`DEFAULT_MAX_INPUT_IMAGE_MEGAPIXELS = 1.0`、`_ENABLE_INPUT_IMAGE_AUTOSCALE = False`、`_MAX_INPUT_IMAGE_MEGAPIXELS = 1.0`、`_OFFICIAL_SCALE_METHOD = "nearest-exact"`、`_EDIT_IMAGE_URL_FORMAT_OPTION_NAME = "图生图image_url格式测试"`（即包装层输入图自动缩放**默认关闭**，与 §3.5 判断一致）。
+
+### 7.3 "未确认"项核对结果
+
+| 原文位置 | 结论 |
+|---|---|
+| §2 / §3.1 `OUTPUT_NODE` 是否置 True | **已确认：True（动态回填）** |
+| §3.1 `size` 选项顺序 | **已确认：`1024x1024, 1280x720, 720x1280, 1792x1024, 1024x1792`（动态回填）** |
+| §3.1 `image_count` 无 min/max | **已确认：1~10（动态回填）**；`seed` 范围 -1~102400、`timeout_s` 范围 30~3600 |
+| §3.1 `图生图image_url格式测试` 其余可选值 | **已确认：包装层运行时不暴露该参数**（入口裁剪，仅常量存续）（动态回填） |
+| §3.3 `RETURN_TYPES` / `RETURN_NAMES` 具体内容 | **已确认：`("IMAGE", "STRING")` / `("images", "text")`（动态回填）** |
+| §3.3 并发度如何取值 | 运行时 introspection 未采集到该值，保持未确认 |
+| §3.5 `_MAX_INPUT_IMAGE_MEGAPIXELS` 数值 | **已确认：1.0（动态回填）** |
+| §3.6 `_IMAGE_DOWNLOAD_CACHE_MAX` 数值 | **已确认：16（动态回填）** |
+| §6.5 `白底三视图`/`白底四视图` 与两个三视图模板的对应 | **已确认：白底三视图 → 短模板；白底四视图 → 长模板（动态回填 `QUICK_FUNCTION_PREFIXES`）** |
+
+另注：运行时环境下 `prompt` 参数带 `defaultInput: true`（§3.1 包装层强制可切连线输入的描述得到实证）。

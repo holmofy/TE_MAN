@@ -56,14 +56,15 @@
 
 | 名称 | 推断类型 | 证据 / 备注 | 置信度 |
 |---|---|---|---|
-| `raw_text` | STRING（multiline） | tooltip 串 `可选上游文本` + `支持一行一条`；前端按行解析 | [高]名称/类型，[中]tooltip 归属 |
-| `prompts_json` | STRING | 前端 `setWidgetValue(node,'prompts_json',JSON.stringify(cards))`、`getPromptItems()`；错误串 `prompts_json 不是有效 JSON` | [高] |
-| `index` | INT | 前端逐条执行时写入该值（JS `['index']=_0x...`）；`_normalize_index(index,total)` | [中] |
-| `执行范围` | COMBO(`BATCH_SCOPE_OPTIONS`＝`只执行当前线`/`执行整个工作流`) | JS `hideWidgets(node,['prompts_json','index','执行范围','最大任务数'])` 证明该 widget 存在但被隐藏 | [中] |
-| `最大任务数` | INT | 同上，前端默认 100（JS `makeBoundNumber(...,'最大任务数',100,1,10000)`） | [中] |
-| `增强设置`（optional） | `TE_BATCH_ENHANCED_SETTINGS` | tooltip `可连接 TE MAN 批量增强设置，控制执行范围`(+`续跑编号和随机顺序`) | [高] |
+| `prompts_json` | STRING（`default:"[]"`，**hidden: true**，由前端注入） | 前端 `setWidgetValue(node,'prompts_json',JSON.stringify(cards))`、`getPromptItems()`；错误串 `prompts_json 不是有效 JSON` | [高]（动态回填全证实） |
+| `index` | INT（default 0，min 0，max 100000，step 1） | 前端逐条执行时写入该值；`_normalize_index(index,total)` | 已确认（动态回填） |
+| `最大任务数` | INT（default 100，min 1，max 10000，step 1，tooltip `批量执行时前端用于防止误提交过多任务。`） | 前端 `makeBoundNumber(...,'最大任务数',100,1,10000)` | 已确认（动态回填） |
+| `增强设置`（optional，`forceInput: true`） | `TE_BATCH_ENHANCED_SETTINGS` | tooltip `可连接 TE MAN 批量增强设置，控制执行范围、间隔、续跑编号和随机顺序。` | 已确认（动态回填） |
+| `prompts`（optional，`forceInput: true`） | STRING | tooltip `可选上游文本。支持一行一条、编号列表或 JSON 数组。`——**实测键名为 `prompts` 而非 `raw_text`** | 已确认（动态回填，更正键名） |
 
-- 返回 [中]：`RETURN_NAMES` 含 `输出提示词`（唯一输出名串）；RETURN_TYPES 未直接可见，推断 = `("STRING",)` [低]。是否还返回 index/total：未确认（池中有 `index`/`total`，但它们同时也是 `_normalize_index` 的参数名）。
+> 动态回填更正：批量节点自身的 INPUT_TYPES 中**没有** `执行范围` COMBO（`只执行当前线/执行整个工作流` 只出现在增强设置节点，见 §3.3）；`raw_text` 推断键名不成立，实际为 optional 输入口 `prompts`（forceInput）。`prompts_json` 与 `image_list` 带 `hidden: true` 标记（隐藏 widget、由前端序列化注入）。
+
+- 返回：已确认 `RETURN_TYPES = ("STRING", "STRING")`、`RETURN_NAMES = ("输出提示词", "编号")`（动态回填）——即除提示词外还返回第二输出口"编号"。
 - 行为（依前端 + 后端函数名综合）：
   1. 前端卡片 UI（新增/导入/txt分割导入/导入txt文件夹/清空）把卡片列表序列化进 `prompts_json`；`prompts_json` 支持 JSON 数组、逐行文本、`---` 分隔大段、\`\`\`json 围栏（JS 提示符串 `\n/ JSON / --- `）[高（前端串）]。
   2. 每次排队前，前端把本次 item 的编号写入 `index` widget，再 graphToPrompt 入队 [高（JS）]。
@@ -78,14 +79,15 @@
 
 | 名称 | 推断类型 | 证据 / 备注 | 置信度 |
 |---|---|---|---|
-| `image_list` | STRING（multiline） | tooltip `编号列表或 JSON 数组`；前端 `getImageNames/setImageNames` 按行 join；`_parse_image_list(image_list, max_images)` | [高] |
-| `index` | INT | 同 3.1；`_normalize_index` | [中] |
-| `max_images` | INT | tooltip `0 表示不限制`（0x19b50 与 `TEMANBatchImageNode.INPUT_TYPES` 相邻） | [高]名称，[中]tooltip 归属 |
-| `最大任务数` | INT | 同 3.1（前端隐藏 widget） | [中] |
-| `执行范围` | COMBO | 同 3.1 | [中] |
-| `增强设置`（optional） | `TE_BATCH_ENHANCED_SETTINGS` | 同 3.1 | [高] |
+| `image_list` | STRING（multiline，default ""，**hidden: true** 由前端注入） | tooltip `编号列表或 JSON 数组`；前端 `getImageNames/setImageNames` 按行 join；`_parse_image_list(image_list, max_images)` | 已确认（动态回填） |
+| `index` | INT（default 0，min 0，max 100000，step 1） | 同 3.1；`_normalize_index` | 已确认（动态回填） |
+| `max_images` | INT（default 0，min 0，max 100000，step 1，tooltip `0 表示不限制。`） | 0 为哨兵值 | 已确认（动态回填） |
+| `最大任务数` | INT（default 100，min 1，max 10000，step 1） | 同 3.1 | 已确认（动态回填） |
+| `增强设置`（optional，`forceInput: true`） | `TE_BATCH_ENHANCED_SETTINGS` | 同 3.1 | 已确认（动态回填） |
 
-- 返回 [高 names / 中 types]：`RETURN_NAMES` = `输出图片`、`图片文件名`；tooltip `输出用不带后缀的文件名；加载仍用完整 name`（用于把文件名喂给保存节点当动态文件名，README §7 "保存文件名"输入口与之衔接）。类型推断 `("IMAGE","STRING")`：加载链 `PIL.Image`+`ImageOps.exif_transpose`+`numpy.from_numpy/astype/float32`+`torch.Tensor` 串齐全 [高]。
+> 动态回填更正：批量图片节点同样**没有** `执行范围` 输入。
+
+- 返回：已确认 `RETURN_TYPES = ("IMAGE", "STRING", "STRING")`、`RETURN_NAMES = ("输出图片", "图片文件名", "编号")`（动态回填）；tooltip `输出用不带后缀的文件名；加载仍用完整 name`（用于把文件名喂给保存节点当动态文件名，README §7 "保存文件名"输入口与之衔接）。
 - 行为：
   - `VALIDATE_INPUTS`（genexpr）对名单逐项用 `folder_paths.exists_annotated_filepath`/`isfile` 校验，失败报 `图片不存在：…` [高名称]。
   - `load_image` 按 `index` 取一项：`get_annotated_filepath` → `open` → PIL 载入，失败报 `图片读取失败：…`；多帧图支持迹象：`ImageSequence`、`frames`、`width`/`height`、`torch`/`cat`/`dim`（多帧拼接张量）[低-中，未确认细节]。
@@ -95,18 +97,19 @@
 ### 3.3 TEMANBatchEnhancedSettingsNode（TE_MAN_Batch_Enhanced_Settings）
 
 - FUNCTION：`build_settings` [高]。
-- DESCRIPTION（两段串拼接）：`TE MAN 批量增强设置：连接到批量提示词/批量图片节点，控制批量执行范围续跑编号和随机顺序` [高]。
+- DESCRIPTION：已确认完整原文 = `TE MAN 批量增强设置：连接到批量提示词/批量图片节点，控制批量执行范围、间隔、续跑编号和随机顺序。`（动态回填，含顿号"间隔"与句号）。
 - 输入参数：**控件名即为中文串**（JS 按名读值 `getWidgetValue(节点,'执行范围'...)` 直证）[高]：
 
 | 控件名 | 推断类型 | tooltip（字面串） | 置信度 |
 |---|---|---|---|
-| `执行范围` | COMBO：`只执行当前线` / `执行整个工作流` | `默认只执行当前批量节点连接出去的流程；需要全工作流时改为执行整个工作流` | [高] |
-| `从指定编号继续` | INT（默认 1，min 1） | `从第几个编号开始批量执行` / `1 表示从第一项开始` | [高] |
-| `随机编号执行` | BOOLEAN | `开启后，在当前范围内随机顺序提交` | [高] |
-| `执行间隔时间` | FLOAT（前端默认 0） | `每提交 1 个任务后等待的秒数` / `0 表示立即提交下一个` | [高]名称，[中]类型 |
-| `最大任务数` | INT（前端默认 100，上限 10000） | `批量执行时前端用于防止误提交过多任务` / `0 表示不限制` | [高]名称，[中]tooltip 归属 |
+| `执行范围` | COMBO：`只执行当前线` / `执行整个工作流`（default `只执行当前线`） | `默认只执行当前批量节点连接出去的流程；需要全工作流时改为执行整个工作流。` | 已确认（动态回填） |
+| `从指定编号继续` | INT（default 1，min 1，max 100000，step 1） | `从第几个编号开始批量执行。1 表示从第一项开始。` | 已确认（动态回填） |
+| `随机编号执行` | BOOLEAN（default false） | `开启后，在当前范围内随机顺序提交。` | 已确认（动态回填） |
+| `执行间隔时间` | FLOAT（default 0.0，min 0.0，max 86400.0，step 0.1） | `每提交 1 个任务后等待的秒数。0 表示立即提交下一个。` | 已确认（动态回填） |
 
-- 输出：类型 `TE_BATCH_ENHANCED_SETTINGS` [高]；输出名未确认。
+> 动态回填更正：增强设置节点的 INPUT_TYPES 只有上述 4 个 required 控件，**不含** `最大任务数`——该控件属于批量提示词/批量图片节点（default 100）。`BATCH_SETTINGS_TYPE = "TE_BATCH_ENHANCED_SETTINGS"`、`BATCH_SCOPE_OPTIONS = ["只执行当前线", "执行整个工作流"]` 两常量实测证实。
+
+- 输出：类型 `TE_BATCH_ENHANCED_SETTINGS`；输出名已确认 = `增强设置`（动态回填）。
 - 行为（README §6）：节点本身不做调度，只把 5 个参数打包（`build_settings`）。**实际消费主要发生在前端**：JS 沿批量节点 `增强设置` 输入的 link 找到该节点，读上述 5 个 widget 值，组装内部对象 `{intervalSeconds, startNumber, random, scope, connected}` 驱动批量入队 [高（JS 反编译片段直证）]。后端 `build_settings` 返回的字典被谁读取：未确认——池中英文键 `scope`/`start_number`/`interval`/`selected`/`max_images` 存在 [高（串）]，但它们更像 settings 字典的键；`TE_BATCH_ENHANCED_SETTINGS` 字符串全仓库只出现在本 .pyd 内（grep 实测），无其他节点消费迹象。
 
 ## 4. 关键行为细节（前端口径，均为 JS 直证）
@@ -223,3 +226,82 @@ SCOPE_CURRENT_LINE='只执行当前线'  SCOPE_FULL_WORKFLOW='执行整个工作
 python -c "data=open('TE_Batch_Tools.pyd','rb').read();print([t for t in [b'task_runner',b'BatchGenerationRunner',b'Interrupt',b'ThreadPool',b'concurrent'] if t in data])"
 # 期望输出 [] —— 两个"批次"机制互不引用
 ```
+
+## 7. 动态 introspection 回填（Windows+ComfyUI 真机实测）
+
+> 数据来源：GitHub Actions Windows 2025 Server + Python 3.13.16 + ComfyUI（`D:\a\_temp\ComfyUI`）真实加载 `TE_MAN` 包后的运行时 introspection（module 显示为 `custom_nodes.TE_image.TE_Batch_Tools`，TE_image 为插件原名）。以下为节点定义的运行时精确值。
+
+### 7.1 TEMANBatchPromptNode（TE_MAN_Batch_Prompt）
+
+- FUNCTION=`get_prompt`；CATEGORY=`TE MAN/Batch`；DESCRIPTION=`TE MAN 批量提示词：卡片式管理多条提示词，可单项执行或批量执行。`；`has_IS_CHANGED=true`、`has_VALIDATE_INPUTS=true`（§3.1 的 IS_CHANGED/VALIDATE_INPUTS 推断证实）；无 OUTPUT_NODE；无 `has_check_lazy_status`/`has_on_execute`。
+- RETURN_TYPES=`("STRING","STRING")`，RETURN_NAMES=`("输出提示词","编号")`。
+- INPUT_TYPES（required）：
+
+| 参数 | 类型 | 附加属性 |
+|---|---|---|
+| `prompts_json` | STRING | `default="[]"`，**hidden=true** |
+| `index` | INT | default 0，min 0，max 100000，step 1 |
+| `最大任务数` | INT | default 100，min 1，max 10000，step 1，tooltip=`批量执行时前端用于防止误提交过多任务。` |
+
+- INPUT_TYPES（optional）：
+
+| 参数 | 类型 | 附加属性 |
+|---|---|---|
+| `增强设置` | TE_BATCH_ENHANCED_SETTINGS | forceInput=true，tooltip=`可连接 TE MAN 批量增强设置，控制执行范围、间隔、续跑编号和随机顺序。` |
+| `prompts` | STRING | forceInput=true，tooltip=`可选上游文本。支持一行一条、编号列表或 JSON 数组。` |
+
+- hidden 输入：`prompts_json`（hidden 标记，前端注入卡片 JSON）。
+
+### 7.2 TEMANBatchImageNode（TE_MAN_Batch_Image）
+
+- FUNCTION=`load_image`；CATEGORY=`TE MAN/Batch`；DESCRIPTION=`TE MAN 批量图片：多图列表管理，可单项执行或批量执行。`；`has_IS_CHANGED=true`、`has_VALIDATE_INPUTS=true`；无 OUTPUT_NODE。
+- RETURN_TYPES=`("IMAGE","STRING","STRING")`，RETURN_NAMES=`("输出图片","图片文件名","编号")`。
+- INPUT_TYPES（required）：
+
+| 参数 | 类型 | 附加属性 |
+|---|---|---|
+| `image_list` | STRING | multiline=true，default=""，**hidden=true** |
+| `index` | INT | default 0，min 0，max 100000，step 1 |
+| `max_images` | INT | default 0，min 0，max 100000，step 1，tooltip=`0 表示不限制。` |
+| `最大任务数` | INT | default 100，min 1，max 10000，step 1，tooltip=`批量执行时前端用于防止误提交过多任务。` |
+
+- INPUT_TYPES（optional）：`增强设置`（TE_BATCH_ENHANCED_SETTINGS，forceInput=true，tooltip 同 7.1）。
+- hidden 输入：`image_list`。
+
+### 7.3 TEMANBatchEnhancedSettingsNode（TE_MAN_Batch_Enhanced_Settings）
+
+- FUNCTION=`build_settings`；CATEGORY=`TE MAN/Batch`；DESCRIPTION=`TE MAN 批量增强设置：连接到批量提示词/批量图片节点，控制批量执行范围、间隔、续跑编号和随机顺序。`；`has_IS_CHANGED=false`、`has_VALIDATE_INPUTS=false`；无 OUTPUT_NODE。
+- RETURN_TYPES=`("TE_BATCH_ENHANCED_SETTINGS",)`，RETURN_NAMES=`("增强设置",)`。
+- INPUT_TYPES（全部 required，无 optional、无 hidden）：
+
+| 参数 | 类型 | 附加属性 |
+|---|---|---|
+| `执行间隔时间` | FLOAT | default 0.0，min 0.0，max 86400.0，step 0.1，tooltip=`每提交 1 个任务后等待的秒数。0 表示立即提交下一个。` |
+| `从指定编号继续` | INT | default 1，min 1，max 100000，step 1，tooltip=`从第几个编号开始批量执行。1 表示从第一项开始。` |
+| `随机编号执行` | BOOLEAN | default false，tooltip=`开启后，在当前范围内随机顺序提交。` |
+| `执行范围` | COMBO `["只执行当前线","执行整个工作流"]` | default=`只执行当前线`，tooltip=`默认只执行当前批量节点连接出去的流程；需要全工作流时改为执行整个工作流。` |
+
+### 7.4 模块常量实锤值
+
+| 常量 | 实测值 |
+|---|---|
+| `BATCH_SETTINGS_TYPE` | `"TE_BATCH_ENHANCED_SETTINGS"` |
+| `BATCH_SCOPE_OPTIONS` | `["只执行当前线","执行整个工作流"]` |
+| `NODE_CLASS_MAPPINGS` | `TE_MAN_Batch_Prompt / TE_MAN_Batch_Image / TE_MAN_Batch_Enhanced_Settings` → 三个类（键名与 §2 表完全一致） |
+| `NODE_DISPLAY_NAME_MAPPINGS` | `TE MAN 批量提示词` / `TE MAN 批量图片` / `TE MAN 批量增强设置` |
+| `function_docs._filename_stem` | `"输出用不带后缀的文件名；加载仍用完整 name。"`（§3.2 tooltip 归属证实） |
+
+### 7.5 对正文"未确认"项的核对结论
+
+| 正文位置 | 结论 |
+|---|---|
+| §3.1 返回"是否还返回 index/total：未确认" | 已确认：两输出口 `输出提示词`+`编号`（动态回填） |
+| §3.1 `raw_text` 键名推断 | 不成立：实际 optional 输入口键名为 `prompts`（forceInput） |
+| §3.1/3.2 `执行范围` COMBO 归属批量节点 [中] | 不成立：批量节点无此输入，只存在于增强设置节点 |
+| §3.1/3.2 `index`、`最大任务数` 类型/默认值 [中] | 已确认（见 7.1/7.2 全表） |
+| §3.2 返回类型 `("IMAGE","STRING")` [中] | 已确认，实为三输出口，末位 `编号`（动态回填） |
+| §3.3 输入含 `最大任务数` | 不成立：增强设置节点仅 4 个控件 |
+| §3.3 "输出名未确认" | 已确认：`增强设置`（动态回填） |
+| §3.3 "后端 build_settings 返回的字典被谁读取：未确认" | 保留未确认（introspection 不含调用关系） |
+| §3.1/3.2 IS_CHANGED=SHA256 方案 [中] | 部分证实：has_IS_CHANGED=true，具体哈希实现 introspection 不可见 |
+| §6.2 "scope/start_number/interval/selected/safe_index 作用未确认" | 保留未确认（动态数据不含内部字典键用途） |

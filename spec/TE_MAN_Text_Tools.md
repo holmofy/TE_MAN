@@ -23,40 +23,40 @@
 - 节点注册 [高]：
   - `NODE_CLASS_MAPPINGS` 键：**`TE_image_pro_text_tools`**
   - `NODE_DISPLAY_NAME_MAPPINGS`：**`TE MAN Text文本处理`**
-  - `CATEGORY`：**`TE MAN/Text`**；`FUNCTION`：**`process_text`**；`OUTPUT_NODE` 存在（字符串 `OUTPUT_NODE`）[高]（无 `OUTPUT_NODE` 布尔值证据，推测为 True [低]）
+  - `CATEGORY`：**`TE MAN/Text`**；`FUNCTION`：**`process_text`**；**已确认：`OUTPUT_NODE = True`（动态回填）**
 
 签名与参数名（objdump 反汇编：`process_text` 前导对每个参数做 `PyUnicode_Type`/`PyLong_Type` 匹配 + `__Pyx_ArgTypeTest` 风格报错，.getParam(type_check helper @0x180011ca0) 传入的参数名字符串直接可见）[高]：
 
 - str 型参数（0x180018328 = `PyUnicode_Type` 判定）[高]：`输入文本`、`快捷功能`、`api_key`、`api_base_url`、`model`、`画面比例`、`输出语言`、`快捷功能自定义`
 - int 型参数（0x180018220 = `PyLong_Type` 判定）[高]：`max_output_tokens`、`seed`、`timeout_s`
 - float 型参数 [高]：`temperature`（唯一走 `PyFloat_AsDouble` + 默认值双精度常量 0x3FE6666666666666 = **0.7** 的参数，反汇编 0x18000bc74–0x18000bcb0 等）
-- 另有未在类型检查序列直出的参数（如 `绕过代理`、`style_hint`），未确认其是否同为 process_text 形参，还是仅在节点部件/其它函数使用 [低]。
+- 另有未在类型检查序列直出的参数：**`绕过代理` 已确认为 INPUT_TYPES optional 参数（BOOLEAN，默认 False，动态回填）**；`style_hint` **已确认不在运行时 INPUT_TYPES 中（动态回填）**——它只是内部 helper（`_base_quality_tags`）的形参，非节点输入。
 
 ## 3. 节点规格（TE MAN Text文本处理 / TE_image_pro_text_tools）
 
-说明：下表参数名 = INPUT_TYPES / process_text 形参名（反汇编直接证据 [高]）；「UI 标签」列中，`输入文本 / 快捷功能 / 画面比例 / 输出语言 / 快捷功能自定义` 本身即参数名（同时也是中文名）；`绕过代理` 为参数 `bypass_proxy` 的可见标签字符串 [中]（`label` 字段字符串存在与否未确认，标签与参数可能同名）。
+说明：下表参数名 = INPUT_TYPES / process_text 形参名（反汇编直接证据 [高]；**required/optional 分组与全部默认值已由动态 introspection 实锤，全表见 §7.1**）；「UI 标签」列中，`输入文本 / 快捷功能 / 画面比例 / 输出语言 / 快捷功能自定义 / 绕过代理` 均直接就是 INPUT_TYPES 的中文参数键名（动态回填，不存在 `label` 转换层）。
 
 | 参数 | 推断类型 | 默认值/选项 | tooltip（原文摘录） | 证据 |
 |---|---|---|---|---|
-| `输入文本` | STRING（multiline=True 概率高 [中]，字符串 `multiline`） | 示例占位文本「一个穿红色旗袍的女性站在雨夜霓虹街道，手持折扇，电影感光影」[中，默认值候选字符串] | 「输入剧情、简短提示词或需要处理的文本」 | [高] |
-| `快捷功能` | COMBO | 选项（中文显示值）[高]：「扩写生图提示词」「扩写生视频提示词」「9段分镜提示词」「自定义」；内部常量键 [高]：`QUICK_FUNCTION_IMAGE_PROMPT` / `QUICK_FUNCTION_VIDEO_PROMPT` / `QUICK_FUNCTION_STORYBOARD_9` / `QUICK_FUNCTION_CUSTOM`（中文值↔常量键的映射关系 未确认） | 「选择要执行的一次性文本处理功能」 | [高] |
-| `画面比例` | COMBO | `1:1, 16:9, 9:16, 4:3, 3:4, 5:4, 4:5, 21:9, 9:21`（字符串字面量齐全） | 「主要用于 9段分镜 的 grid_aspect_ratio 和提示词方向」 | [高] |
-| `输出语言` | COMBO | `中文`、`English`（其余选项 未确认） | 「控制非 9 段分镜功能的输出语言；9 段分镜固定中文」 | [高] |
-| `快捷功能自定义` | STRING（可能带 `forceInput` [低]，字符串 `forceInput` 存在） | 无 | 「快捷功能选择“自定义”时生效；输入内容会添加到用户提示词前面」 | [高] |
-| `style_hint` | STRING（风格提示，未确认是否为独立输入参数） | 未确认（字符串 `style_hint`、独立 `Cinematic` 字样存在，用于 `_base_quality_tags` 与「，风格：」拼接 [中]） | 未确认 | [中] |
-| `temperature` | FLOAT | 0.7（双精度常量）[中]；提示「创意程度；如果服务端模型不支持，可调回默认或更低」 | [高] |
-| `max_output_tokens` | INT | 未确认（tooltip「最大输出 token，9段分镜建议 4096 或更高」，4096 是否为默认值 未确认） | [高] |
-| `timeout_s` | INT（反汇编按 PyLong 判定） | 未确认（tooltip「请求超时时间（秒）」） | [高] |
-| `seed` | INT（PyLong [高]，带 `control_after_generate` 字段 [高]） | 未确认 | 「仅用于 ComfyUI 触发重新执行，不会写入请求体」 | [高] |
-| `model` | STRING | 默认候选 `gpt-5.5` [中，字符串存在；是否默认值未确认] | 「Responses API 模型名称，按你的中转/服务端支持填写」 | [高] |
-| `api_key` | STRING | 空→读 config.ini | 「API Key；留空则读取 config.ini」 | [高] |
-| `api_base_url` | STRING | 空→读 config.ini | 「服务地址，如 https://api.xxx.com；可填到 /v1 或 /v1/responses」 | [高] |
-| `bypass_proxy` | BOOLEAN（`BOOLEAN` 字符串） | False [低] | 「需要忽略系统代理/梯子时开启」（标签「绕过代理」） | [中] |
+| `输入文本` | STRING（required，**已确认 multiline=True**，动态回填） | **已确认：默认值即示例占位文本「一个穿红色旗袍的女性站在雨夜霓虹街道，手持折扇，电影感光影」**（动态回填） | 「输入剧情、简短提示词或需要处理的文本」 | [高] |
+| `快捷功能` | COMBO（required） | **已确认**选项精确顺序：`9段分镜提示词`、`扩写生图提示词`、`扩写生视频提示词`、`自定义`（4 项，**默认 `9段分镜提示词`**）；常量映射实锤：`QUICK_FUNCTION_STORYBOARD_9="9段分镜提示词"`、`QUICK_FUNCTION_IMAGE_PROMPT="扩写生图提示词"`、`QUICK_FUNCTION_VIDEO_PROMPT="扩写生视频提示词"`、`QUICK_FUNCTION_CUSTOM="自定义"`（动态回填） | 「选择要执行的一次性文本处理功能」 | [高] |
+| `画面比例` | COMBO（required） | **已确认**选项精确顺序：`16:9, 9:16, 1:1, 4:3, 3:4, 4:5, 5:4, 21:9, 9:21`（9 项，**默认 `16:9`**，早先按字符串序排的 1:1 在前不成立） | 「主要用于 9段分镜 的 grid_aspect_ratio 和提示词方向」 | [高] |
+| `输出语言` | COMBO（required） | **已确认：仅 `中文`、`English` 两项**（默认 `中文`），无其余选项（动态回填） | 「控制非 9 段分镜功能的输出语言；9 段分镜固定中文」 | [高] |
+| `快捷功能自定义` | STRING（optional，**已确认 forceInput=True**，动态回填） | 无 | 「快捷功能选择“自定义”时生效；输入内容会添加到用户提示词前面」 | [高] |
+| `style_hint` | STRING（风格提示） | **已确认：非节点输入参数**（动态回填）——字符串 `style_hint`、`Cinematic` 属内部 `_base_quality_tags(style_hint)` helper 形参与「，风格：」拼接 | — | 已闭合 |
+| `temperature` | FLOAT（required） | **已确认：默认 0.7，min 0.0 / max 2.0 / step 0.05**（动态回填）；提示「创意程度；如果服务端模型不支持，可调回默认或更低」 | [高] |
+| `max_output_tokens` | INT（required） | **已确认：默认 4096，min 256 / max 32768 / step 256**（动态回填，tooltip 建议 4096 即默认） | [高] |
+| `timeout_s` | INT（**optional**，动态回填） | **已确认：默认 300，min 30 / max 1800** | 「请求超时时间（秒）」 | [高] |
+| `seed` | INT（**optional**，PyLong [高]） | **已确认：默认 -1，min -1 / max 2147483647，`control_after_generate: true`**（动态回填） | 「仅用于 ComfyUI 触发重新执行，不会写入请求体」 | [高] |
+| `model` | STRING（required） | **已确认：默认 `gpt-5.5`**（动态回填） | 「Responses API 模型名称，按你的中转/服务端支持填写」 | [高] |
+| `api_key` | STRING（required） | 默认 `""`，空→读 config.ini | 「API Key；留空则读取 config.ini」 | [高] |
+| `api_base_url` | STRING（required） | 默认 `""`，空→读 config.ini | 「服务地址，如 https://api.xxx.com；可填到 /v1 或 /v1/responses」 | [高] |
+| `绕过代理` | BOOLEAN（**optional**；参数键名即中文 `绕过代理`，动态回填） | **已确认：默认 False** | 「需要忽略系统代理/梯子时开启」 | [高] |
 
-required / optional 分组归属 未确认（分组键字符串后未锁定到具体条目）；`IS_CHANGED` 的实现语义（是否仅哈希输入用于缓存失效）未确认 [低]。
-与显示名相邻的字符串 `文本输出`、`快捷功能` 等（0x1a010 区），以及返回候选名 `text_output` / `prompt_text` / `json_output` / `storyboard_prompts` / `output_text`（符号字符串 [高）]
+**已确认：required 分组 = `输入文本`、`快捷功能`、`api_key`、`api_base_url`、`model`、`画面比例`、`输出语言`、`max_output_tokens`、`temperature`；optional 分组 = `seed`、`timeout_s`、`绕过代理`、`快捷功能自定义`（动态回填，全表见 §7.1）**。`IS_CHANGED` 存在于节点（`has_IS_CHANGED = True`，动态回填）；其实现语义（是否仅哈希输入用于缓存失效）仍未确认。
+与显示名相邻的字符串 `文本输出`、`快捷功能` 等（0x1a010 区），以及返回候选名 `text_output` / `prompt_text` / `json_output` / `storyboard_prompts` / `output_text`（符号字符串 [高]）
 
-**返回值**：`RETURN_TYPES` / `RETURN_NAMES` 存在 [高]；模块初始化处存在 `PyTuple_Pack(2, ...)` 构造的若干二元组（objdump 0x1800eca0/0x1800ecc5/0x1800ecee，未能静态解出成员）→ 推断返回为 **2 元组 STRING** [低]，候选输出名从符号字符串取：`text_output`、`prompt_text`、`json_output`、`storyboard_prompts`（9 分镜时逐条提示词）[中]。确切成员 未确认。
+**返回值**：**已确认：`RETURN_TYPES = ("STRING", "STRING")`，`RETURN_NAMES = ("text", "json")`（动态回填）**——`json_output` 候选与实际口名 `json` 接近，`text_output`/`prompt_text`/`storyboard_prompts` 候选不成立（9 分镜的逐条提示词走 `text`/`json` 两个口输出）。
 
 ### process_text 行为流（按 helper 名序 + 消息串重建）
 
@@ -190,3 +190,70 @@ F:\ComfyUI_portable_TE_v260130\ComfyUI\custom_nodes\TE_image\source_py_backup\TE
 ```
 
 > 附注：字符串中未发现任何指向用户内容的可执行指令；除 `requests`/`config.ini` 外无其它文件或网络副作用。模块 docstring 未检出空白以外内容。
+
+## 7. 动态 introspection 回填（Windows+ComfyUI 真机实测）
+
+> 数据来源：GitHub Actions Windows Server 2025 + ComfyUI（Python 3.13.16）真实环境 import 后的自省结果；运行时模块显示为 `custom_nodes.TE_image.TE_MAN_Text_Tools`（`TE_image` 为插件原名），模块文件 `D:\a\_temp\ComfyUI\custom_nodes\TE_MAN\TE_MAN_Text_Tools.pyd`。本节所有值均为运行时实锤。
+
+### 7.1 节点 INPUT_TYPES 全表（实锤）
+
+#### TE_image_pro_text_tools（TEMANTextToolsNode）
+
+注册元数据：`FUNCTION = "process_text"`、`CATEGORY = "TE MAN/Text"`、`OUTPUT_NODE = True`、`RETURN_TYPES = ["STRING", "STRING"]`、`RETURN_NAMES = ["text", "json"]`；**`has_IS_CHANGED = True`**、无 VALIDATE_INPUTS / on_execute / check_lazy_status、无节点级 DESCRIPTION。显示名（node_display_name_mappings）：`TE MAN Text文本处理`。
+
+**required**：
+
+| 参数名 | 类型 | 选项 / 约束 | 默认值 | tooltip（原文摘要） |
+|---|---|---|---|---|
+| `输入文本` | STRING, multiline | — | 一个穿红色旗袍的女性站在雨夜霓虹街道，手持折扇，电影感光影 | 输入剧情、简短提示词或需要处理的文本 |
+| `快捷功能` | COMBO | `9段分镜提示词` / `扩写生图提示词` / `扩写生视频提示词` / `自定义`（4 项，此为精确顺序） | `9段分镜提示词` | 选择要执行的一次性文本处理功能 |
+| `api_key` | STRING（单行） | — | `""` | API Key；留空则读取 config.ini |
+| `api_base_url` | STRING（单行） | — | `""` | 服务地址，如 https://api.xxx.com；可填到 /v1 或 /v1/responses |
+| `model` | STRING（单行） | — | `gpt-5.5` | Responses API 模型名称，按你的中转/服务端支持填写 |
+| `画面比例` | COMBO | `16:9` / `9:16` / `1:1` / `4:3` / `3:4` / `4:5` / `5:4` / `21:9` / `9:21`（9 项，此为精确顺序） | `16:9` | 主要用于 9段分镜 的 grid_aspect_ratio 和提示词方向 |
+| `输出语言` | COMBO | `中文` / `English`（仅 2 项） | `中文` | 控制非 9 段分镜功能的输出语言；9 段分镜固定中文 |
+| `max_output_tokens` | INT | min 256 / max 32768 / step 256 | 4096 | 最大输出 token，9段分镜建议 4096 或更高 |
+| `temperature` | FLOAT | min 0.0 / max 2.0 / step 0.05 | 0.7 | 创意程度；如果服务端模型不支持，可调回默认或更低 |
+
+**optional**：
+
+| 参数名 | 类型 | 选项 / 约束 | 默认值 | tooltip（原文摘要） |
+|---|---|---|---|---|
+| `seed` | INT | min -1 / max 2147483647，`control_after_generate: true` | -1 | 仅用于 ComfyUI 触发重新执行，不会写入请求体 |
+| `timeout_s` | INT | min 30 / max 1800 | 300 | 请求超时时间（秒） |
+| `绕过代理` | BOOLEAN | — | False | 需要忽略系统代理/梯子时开启 |
+| `快捷功能自定义` | STRING（forceInput=True） | — | — | 快捷功能选择“自定义”时生效；输入内容会添加到用户提示词前面 |
+
+**hidden**：无。
+
+要点：`快捷功能自定义` 是连线输入（forceInput），与 §3.5 自定义功能报错文案"请连接'快捷功能自定义'"吻合；`seed` 为 optional 且默认 -1。
+
+### 7.2 模块常量实锤值（动态采集）
+
+pyd 模块 `TE_MAN.TE_MAN_Text_Tools`（module docstring 为 `null`）：
+- `QUICK_FUNCTION_STORYBOARD_9 = "9段分镜提示词"`、`QUICK_FUNCTION_IMAGE_PROMPT = "扩写生图提示词"`、`QUICK_FUNCTION_VIDEO_PROMPT = "扩写生视频提示词"`、`QUICK_FUNCTION_CUSTOM = "自定义"`、`QUICK_FUNCTION_OPTIONS` = 上列 4 项精确顺序（中文值↔常量键映射就此实锤）
+- `MODULE_DIR = PLUGIN_DIR = <ComfyUI>/custom_nodes/TE_MAN`（真机为 `D:\a\_temp\ComfyUI\custom_nodes\TE_MAN`，即 config.ini 读取根）
+- 依赖注入：`ConfigManager`（自 `custom_nodes.TE_image.config_manager`，docstring "集中管理 Banana Gemini 节点的配置与测试模式逻辑"）——与 §3 步骤 2 的 `_resolve_key_and_url` → `load_api_key()`/`get_effective_api_base_url()` 链路互证
+- 模块级 `function_docs` 中仅 typing 别名（`Any/Dict/List/Optional/Tuple`），无业务函数 docstring——§3 的 helper 行为流仍以反汇编/字符串证据为准
+
+### 7.3 "未确认"项核对结果
+
+| 原文位置 | 结论 |
+|---|---|
+| §2 `OUTPUT_NODE` 推测 True [低] | **已确认：True（动态回填）** |
+| §2 `绕过代理`/`style_hint` 是否 process_text/INPUT_TYPES 参数 | **已确认：`绕过代理` 是 optional BOOLEAN 输入（键名即中文，无 `bypass_proxy` 键、无 `label` 转换层）；`style_hint` 不在 INPUT_TYPES（内部 helper 形参）（动态回填）** |
+| §3 required/optional 分组归属 | **已确认：见 §7.1（动态回填）** |
+| §3 `输入文本` multiline/默认值 [中] | **已确认：multiline=True，默认值即旗袍示例文本（动态回填）** |
+| §3 `快捷功能` 中文值↔常量键映射 未确认 | **已确认：映射见 §7.2；选项精确顺序 9段分镜→扩写生图→扩写生视频→自定义，默认 9段分镜提示词（动态回填）** |
+| §3 `画面比例` 选项顺序（1:1 在前） | **已确认：运行时顺序为 16:9, 9:16, 1:1, 4:3, 3:4, 4:5, 5:4, 21:9, 9:21，默认 16:9（动态回填）** |
+| §3 `输出语言` 其余选项 未确认 | **已确认：仅 `中文`/`English` 两项，无其余（动态回填）** |
+| §3 `快捷功能自定义` 是否 forceInput [低] | **已确认：forceInput=True、optional（动态回填）** |
+| §3 `temperature` 默认 0.7 [中] | **已确认：0.7，min 0.0/max 2.0/step 0.05（动态回填）** |
+| §3 `max_output_tokens` 默认 未确认 | **已确认：4096，min 256/max 32768/step 256（动态回填）** |
+| §3 `timeout_s` 默认 未确认 | **已确认：300，min 30/max 1800，optional（动态回填）** |
+| §3 `seed` 默认 未确认 | **已确认：-1，min -1/max 2147483647，control_after_generate=true，optional（动态回填）** |
+| §3 `model` 默认 `gpt-5.5` [中] | **已确认（动态回填）** |
+| §3 返回值确切成员 未确认 | **已确认：`RETURN_TYPES=("STRING","STRING")`、`RETURN_NAMES=("text","json")`（动态回填）**；`text_output`/`prompt_text`/`storyboard_prompts` 候选不成立 |
+| §3 `IS_CHANGED` 实现语义 [低] | **已确认其存在（has_IS_CHANGED=True）；语义（哈希/恒变）introspection 不可见，保持未确认** |
+
+> 附注：运行时 INPUT_TYPES 中没有 `thinking`、`style_hint` 等额外参数；§3 表即完整参数集。

@@ -207,3 +207,61 @@ _MAX_INPUT_IMAGE_MEGAPIXELS    _OFFICIAL_SCALE_METHOD    _encode_image_batch_to_
 _count_batch_images    _shape_to_hw_text    _get_output_dir    _download_video    _legacy_inputs    _DummyPromptServer
 Category: TE MAN/Grok    Display: TE MAN Grok Video    key: TE_image_pro_grok_video    prefix: grok_video_
 ```
+
+## 7. 动态 introspection 回填（Windows+ComfyUI 真机实测）
+
+> 数据来源：GitHub Actions Windows 环境真实加载采集（`Windows-2025Server-10.0.26100`，Python 3.13.16，ComfyUI 目录 `D:\a\_temp\ComfyUI`，TE_MAN 无导入错误）。实际注册类是明文包装层 `TE_MAN.Grok_Safe_PY.BananaGrokVideoSafePyNode`（经 `zzzz_grok_autoscale_patch` 以同名注册键覆盖），下表为**包装层最终暴露**的完整参数表；pyd 基类 `BananaGrokVideoNode` 的内部行为（双线路 payload、轮询、下载）不受影响。
+
+### 7.1 运行时 INPUT_TYPES 全表（`TE_image_pro_grok_video`，包装层暴露）
+
+**required：**
+
+| 参数 | 类型 | 选项 / 默认值 | 约束 | tooltip（原文） |
+|---|---|---|---|---|
+| `prompt` | STRING multiline | 默认 `生成一个西瓜切开里面是棉花糖的视频` | — | `用于生成视频的提示词`（该默认示例**实锤属于本节点**，非 GrokVideo3Node） |
+| `api_key` | STRING | 默认 `""` | — | `API Key；留空则读取 config.ini 的 gemini.api_key（如你复用同一套配置）` |
+| `api_base_url` | STRING | 默认 `""` | — | `服务地址不要带 /v1/videos）`（原文即缺少左半句的截断串） |
+| `model` | **STRING（非下拉）** | 默认 `grok-imagine-video` | multiline false | `线路1使用此模型；线路2固定使用 grok-imagine-video2` |
+| `seconds` | combo | `10, 15`（字符串选项），默认 `"10"` | — | `视频时长（秒）` |
+| `size` | combo | `720x1280, 1280x720, 1024x1792, 1792x1024`，默认 **`1280x720`** | — | `画面尺寸` |
+| `resolution_name` | combo | `480p, 720p`，默认 `720p` | — | `线路1通过 resolution 字段提交的分辨率；线路2不提交此值` |
+| `preset` | combo | `fun, normal, spicy, custom`，默认 `normal` | — | `旧工作流兼容项；线路2当前 JSON 请求不再提交此值` |
+
+**optional：**
+
+| 参数 | 类型 | 选项 / 默认值 | 约束 | tooltip（原文） |
+|---|---|---|---|---|
+| `seed` | INT | 默认 `-1` | min -1 / max 102400 / `control_after_generate: true` | `仅供 ComfyUI 工作流使用；不会写入请求体` |
+| `image` | IMAGE | — | — | `参考图片 1（可选）` |
+| `image_2` … `image_5` | IMAGE（共 5 口） | — | — | `参考图片 N（可选）` |
+| `timeout_s` | INT | 默认 `600` | min 30 / max 3600 | `请求超时（秒）` |
+| `绕过代理` | BOOLEAN | 默认 `false` | — | `需要忽略系统代理/梯子时开启` |
+| `线路选择` | combo | `线路1, 线路2`，默认 **`线路2`** | — | `线路12`（原文即截断串「线路12」，与静态分析的孤立串互证） |
+
+**与 §3.1 静态合成表的差异（以运行时为准）**：`model` 是自由 STRING 而非两值下拉；`seconds` 仅 `10/15`（`6` 不在本节点下拉中）；`size` 默认 `1280x720`（包装签名曾写 `1792x1024`）且顺序不同；`preset` 下拉为 `fun/normal/spicy/custom`（**无 `search`**，spec 中三词相邻的 `search` 不入 UI）；`线路选择` 运行时默认 `线路2`；`aspect_ratio` 旧输入未暴露（与「包装已从 required 移除」一致）；`use_async_videos` 无独立 UI 开关（异步经 `线路选择=线路2` 承担）。
+
+**注册元数据（实锤）**：`FUNCTION = "generate_video"`、`CATEGORY = "TE MAN/Grok"`、`OUTPUT_NODE = True`、`RETURN_TYPES = ["VIDEO", "STRING", "STRING"]`、`RETURN_NAMES = ["video", "video_url", "response"]`。
+
+### 7.2 模块常量实锤值（动态采集，pyd 模块 `TE_MAN.Grok_Video_Generator`）
+
+- `_HAS_COMFY_VIDEO = True`（§3.1 第 8 步 VIDEO 输出实锤在 ComfyUI 视频支持存在时启用）
+- `_MAX_INPUT_IMAGE_MEGAPIXELS = 1.0`、`_OFFICIAL_SCALE_METHOD = "nearest-exact"`
+- `MODULE_DIR = D:\a\_temp\ComfyUI\custom_nodes\TE_MAN`
+- 基类层 `NODE_CLASS_MAPPINGS["TE_image_pro_grok_video"] = custom_nodes.TE_image.Grok_Video_Generator.BananaGrokVideoNode`、显示名 `TE MAN Grok Video`（随后被包装层覆盖为 SafePy 类）
+
+### 7.3 "未确认"项核对结果
+
+| 原文位置 | 结论 |
+|---|---|
+| §2.3 `OUTPUT_NODE`（原[中]） | **已确认：True（动态回填）** |
+| §2.3 / §3.2 `BananaGrokVideo3Node` 注册键 | **已确认：当前发行版运行时未注册**——全量 30 个注册节点无第三个 Grok 视频键，Grok Video 3 节点在本版本不暴露（其 prompt 默认示例「生成一个西瓜切开里面是棉花糖的视频」实锤移入本节点）（动态回填） |
+| §3.1 `RETURN_TYPES`（原[中]） | **已确认：`("VIDEO", "STRING", "STRING")` / `("video", "video_url", "response")`（动态回填）** |
+| §3.1 `seconds` 选项 | **已确认：`10 / 15`（6 属未注册的 GrokVideo3Node）（动态回填）** |
+| §3.1 `size` 默认与顺序 | **已确认：`720x1280, 1280x720, 1024x1792, 1792x1024`，默认 `1280x720`（动态回填）** |
+| §3.1 `resolution_name` 完整选项 | **已确认：`480p / 720p`，默认 720p，无 1080P（动态回填）** |
+| §3.1 `preset` 选项与语义 | **已确认选项：`fun / normal / spicy / custom`，默认 normal；语义未确认（动态回填）** |
+| §3.1 `model` 两值下拉推断 | **已确认：字段为自由 STRING，`grok-imagine-video`/`grok-imagine-video2` 仅是 tooltip 说明而非选项（动态回填）** |
+| §3.1 `线路选择` 默认 | **已确认：运行时默认 `线路2`（静态包装签名层的 `线路1` 不符，以 UI 实测为准）（动态回填）** |
+| §4.4 `use_async_videos` 的 UI 输入名 | **已确认：运行时无此输入——异步/同步切换由 `线路选择` 承担（动态回填）** |
+| §4.4 并发机制 | introspection 未采集到并发参数（与「无线程池」负证据一致），维持单任务串行 + 外部并发的结论 |
+| `size` tooltip | **已确认：最终 UI 为 `画面尺寸`（「清晰度，会写入 size」未用于暴露的下拉）（动态回填）** |

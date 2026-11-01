@@ -52,39 +52,39 @@ TE MAN v3.8 新增节点模块，包含两个 ComfyUI 节点：**「TE MAN MOSS 
 
 布局节点：扩写 → 出框位 → 编译。`OUTPUT_NODE=True`（OUTPUT_NODE/save_images 字符串存在），输出"版式预览图"。
 
-**输入参数**（参数中文名、tooltip 为直接证据；参数英文名为标识符字符串，个别对应关系 [中]）：
+**输入参数**（tooltip 为直接证据；参数键名已由动态 introspection 实锤，完整 INPUT_TYPES 全表见文末 §7.1。与早前推断的主要出入：`版式选择`/`输出语言`/`本地模型`/`API模型(responses格式)` 就是中文键名；本地生成上限参数叫 `max_length`（非 max_output_tokens/context_length）；另有此前未发现的 `增强方式`（CLIP / 本地 llama.cpp / API 三选一，默认 CLIP）与 `生成后卸载本地模型`（BOOLEAN，默认 True）两个参数；`seed` 也是节点参数（默认 0，max 281474976710655））：
 
 | 参数（推断） | 类型 | 说明（tooltip 原文） |
 |---|---|---|
-| `prompt` | STRING（multiline） | "一句话需求"："输入一句话，自动扩写文案与画面，并按选中版式生成边界框，输出可直接喂给 MOSS-Image 的 layout 提示词"[高=行为描述，键名 [中] |
-| `preset` | COMBO | "版式选择"（§3.1.1 六种）[高；键名 preset 出现在标识符串 `[高]` |
-| `language` | COMBO（默认中文） | "输出语言"："扩写出来的整图描述和元素描述用什么语言；JSON 字段/slot 名和 text/obj 结构值始终是英文"[高；键名 `[中]` |
-| `clip` | CLIP 输入 | "增强方式为 CLIP 时需要连接 clip 输入"；CLIP 模式"调 CLIPLoader 里那个文本模型，采样参数全部用 clip.generate 自己的默认值" [高] |
-| 本地模型文件 | COMBO | "models/LLM 下的本地模型，仅本地 llama.cpp 使用（请把模型放到 models/LLM）"[高] |
-| `max_output_tokens` / `context_length` / `unload` | INT / INT / BOOLEAN | "CLIP 与本地 llama.cpp 的生成上限（新增 token）；API 模式不发送此限制"、"生成后卸载本地模型……释放显存，避免和后面的 MOSS 出图抢显存" [高=max_output_tokens/context_length/unload 为标识符证据] |
-| `api_base_url` / `api_model` / `api_key` | STRING | "API模型(responses格式)"/"扩写用哪个模型"/"仅 API 使用；留空时读取 TE MAN 的 config.ini" [高] |
+| `prompt` | STRING（multiline） | "一句话需求"："输入一句话，自动扩写文案与画面，并按选中版式生成边界框，输出可直接喂给 MOSS-Image 的 layout 提示词"[高=行为描述；已确认：键名 `prompt`，默认 `"一张音乐节海报"`（动态回填） |
+| `版式选择`（早先推断键名 `preset`） | COMBO（默认 `竖版海报`） | "版式选择"（§3.1.1 六种）[高；键名已确认 `版式选择`（动态回填） |
+| `输出语言` | COMBO（默认中文） | "输出语言"："扩写出来的整图描述和元素描述用什么语言；JSON 字段/slot 名和 text/obj 结构值始终是英文"[高；键名已确认 `输出语言`，选项 `中文`/`英文`（动态回填） |
+| `clip` | CLIP 输入（optional，forceInput） | "增强方式为 CLIP 时使用；其它方式接着也没关系。"CLIP 模式"调 CLIPLoader 里那个文本模型，采样参数全部用 clip.generate 自己的默认值" [高；已确认 forceInput=True（动态回填） |
+| `本地模型` | COMBO（唯一选项 `（请把模型放到 models/LLM）`） | "models/LLM 下的本地模型，仅「本地 llama.cpp」使用；其它方式不用管。"[高] |
+| `max_length` / `生成后卸载本地模型` | INT / BOOLEAN | "CLIP 与本地 llama.cpp 的生成上限（新增 token）；API 模式不发送此限制"、"生成完就释放显存，避免和后面的 MOSS 出图抢显存；要连续调版式可以关掉" [高；已确认：键名为 `max_length`（默认 4096，min 256 / max 8192 / step 64）与 `生成后卸载本地模型`（默认 True）；早先推断的 max_output_tokens/context_length/unload 键名不成立（动态回填） |
+| `api_base_url` / `API模型(responses格式)` / `api_key` | STRING | 默认 `https://teynex.com` / `deepseek-v4.1-flash` / `""`；"仅 API 使用；按 OpenAI 兼容的 /responses 接口调用"、"仅 API 使用；填服务端 /responses 接口认识的模型名"、"留空时读取 TE MAN 的 config.ini" [高；键名与默认值已确认（动态回填） |
 
 **版式选择（preset）六种** [高=所有选项行使原文]:
-1. **竖版海报 / 横版横幅 / 方形** —— 固定版式骨架（`LAYOUT_PRESETS`），"内置版式骨架，坐标按比例存，换画布尺寸不用重算"。骨架槽位 role 名：`title`、`subtitle`、`hero`、`caption`、`footer`、`panel`、`scene`（以及 OBJECT_HINTS 判定暗示的 object 型 role）。骨架内置示例内容：`夏日音乐节`、`一张音乐节海报`、`enormous cream serif capitals, centred`、`stage truss silhouettes, crowd, warm haze`（demo 数据 [中：具体挂到哪个槽未确认]）。骨架坐标按比例（`box_ratio`）存 [中]。
+1. **竖版海报 / 横版横幅 / 方形** —— 固定版式骨架（`LAYOUT_PRESETS`），"内置版式骨架，坐标按比例存，换画布尺寸不用重算"。已确认（动态回填）：骨架为纯 `[role, type, 比例坐标]` 三元组，不含任何示例文案；实际 role 集合为——竖版海报 `title/subtitle/hero/detail/footer`、横版横幅 `title/subtitle/hero/footer`、方形 `title/hero/caption`（早先猜的 `panel`/`scene` 不在骨架里，`detail` 是此前漏掉的）；坐标为 0–1 的 `(x, y, w, h)` 比例（"骨架坐标按比例存" 推断成立）。早先认作"骨架内置示例"的 `夏日音乐节`/`一张音乐节海报`/`enormous cream serif capitals, centred`/`stage truss silhouettes, crowd, warm haze` 实为 Box 节点 `boxes` widget 的演示默认 JSON（title=text 槽、hero=obj 槽），不属 LAYOUT_PRESETS。
 2. **自动排版(官方skill)**（内部值 `auto`）[高=字符串存在] —— "由模型给每个槽位写位置，seed 变了版式也会变"。系统 prompt 用 `AUTO_LAYOUT_RULES`（"Layout (you own the composition): 每个槽位必须含 bbox [xmin,ymin,xmax,ymax] 0-1000 比例坐标…"，槽位名由模型自选 "3 to 6 short role names… such as title, subtitle, hero, caption, footer"），`AUTO_REPLY_SHAPE` 的 JSON 形状为：
-   `{"caption": "<caption>", "slots": {"<slot name>": {"type": "text|obj", "bbox": [...], "text": "...", "desc": "..."}}}` [高]
+   `{"caption": "<caption>", "slots": {"<slot name>": {"type": "text|obj", "bbox": [...], "text": "...", "desc": "..."}}}` [高=动态实锤，AUTO_REPLY_SHAPE 确含 type/bbox 键]
 3. **只扩写(无框位)**（内部值 `caption_only`）[高] —— "只输出扩写后的整图描述，不产生元素列表"，`CAPTION_SYSTEM_PROMPT` 的 reply 形状为 `{"caption": "<caption>"}`[高]
 4. **直出(不进行任何处理)**（内部值 `raw`）[高] —— "不调任何模型，prompt 原样传给下游"
 
-**尺寸 widgets**（推断属 Layout/Box 之一侧）[中]:
-- `width` / `height`："输出画布宽度/高度，必须是 16 的倍数"。已确认两者为 Box 节点 widgets（JS `WIDTH_WIDGET/HEIGHT_WIDGET`），Layout 节点是否同有 "输出画布宽/高" 为其 tooltip 原文，字号参数归属两节点哪侧未确认。**未确认点**：波及两个节点的 MODULE 级【未确认：各 widget 归属与默认值】
-- [未确认] Layout 节点另一行为：`无框位：当前只输出纯文本提示词`（caption_only/直出模式提示）
+**尺寸 widgets**（已确认：Layout 与 Box 两节点同有 `width`/`height`，两节点默认值一致：1024×1536，min 256 / max 4096 / step 16；动态回填）:
+- `width` / `height`："输出画布宽度/高度，必须是 16 的倍数"（该 tooltip 属 Layout 节点；Box 节点同名 widget 无 tooltip）。两节点均无"字号"参数——Layout 侧字体大小相关参数不存在，早先的字号归属疑问作废。
+- `无框位：当前只输出纯文本提示词`（caption_only/直出模式提示）：introspection 未采集到运行期 UI 消息，保持原样。
 
 **系统 prompt 体系**（完整原文，[高]）：
-- `SYSTEM_PROMPT`（版式规划共用骨架）："You are a layout planner for an image generation model that consumes a JSON layout prompt."——reply 形状 `REPLY_SHAPE`（预设/自动共用模板占位）为：`{"caption": "<caption>", "slots": {"<slot name>": {"type": "text|obj", "bbox": [<xmin>, <ymin>, <xmax>, <ymax>], "text": "<visible copy>", "desc": "<appearance>"}}}` [高]
+- `SYSTEM_PROMPT`（版式规划共用骨架）："You are a layout planner for an image generation model that consumes a JSON layout prompt."——**已确认（动态回填）：`REPLY_SHAPE`（预设模式模板）为无 type/bbox 键的形状 `{"caption": "<caption>", "slots": {"<slot name>": {"text": "<visible copy>", "desc": "<appearance>"}}}`（bbox 由 `_preset_elements` 落预设骨架时补）；含 `"type": "text|obj"` 与 `bbox` 的是 `AUTO_REPLY_SHAPE`（自动排版模式，§6.2 附录中两行的括注对调了）**
 - 规则正文：`LAYOUT_RULES`（"Every slot MUST contain bbox [xmin, ymin, xmax, ymax], four integers from 0 to 1000… text 槽位不得重叠、文本框尺寸视文案长度…"）
 - `CAPTION_RULES`: "caption" describes the finished picture… 按主体/动作/空间/布景/取景/布光/色调 facets 分段，要求 300-500 词(英)或 500-800 字(中)，禁止出现框位/坐标/JSON/画布比例字样 [高]
 - `LANGUAGE_RULES`: 中文 "Write caption and every desc in Chinese. The caption must be 500-800 Chinese characters and never shorter than 500. JSON keys, slot names and the values text/obj stay in English." / 英文 "…300-500 words and never shorter than 300…" [高]
 - `OBJECT_HINTS`（role→obj 判定词）：`hero/object/obj/image/photo/visual/scene/…/illustration`（按 JS 一致词表 [高]; pyd 内 hero/obj/image/photo/visual/scene/illustration 全部出现）[高]
 - 槽位 type 判定："Choose each slot's type: text for visible copy, obj for imagery"、"A slot typed text MUST include text. A slot typed obj MUST NOT include text." [高]
 
-**输出（RETURN_TYPES/RETURN_NAMES 键存在，值为推断）**[中]：
-- 输出显示名可确认存在 [高]：`完整版式提示词`（layout_prompt，STRING，"编译成 MOSS-Image 的 layout 提示词（单行紧凑 JSON）"）、`整图描述`（caption STRING，"连接后优先使用它"）、`元素列表`（STRING，"可直接接 TE MAN MOSS 增强边界框/增强提示词 的元素列表输出"）、`版式预览图`（IMAGE）
+**输出（已确认，动态回填）**：
+- `RETURN_TYPES = ("STRING", "STRING", "IMAGE", "STRING")`，`RETURN_NAMES = ("完整版式提示词", "元素列表", "版式预览图", "描述")`——第四输出口名是 **`描述`**（即扩写后的整图描述/caption，可接到「TE MAN MOSS 边界框」的上游描述），早先猜的"整图描述"口名与顺序（完整版式提示词/整图描述/元素列表/版式预览图）不成立。
 - 元素条目结构 `[{role, type, text, desc, bbox}]`，bbox 为 `[ymin, xmin, ymax, xmax]` 0-1000 整数（"顺序与 ComfyUI 自带边界框一致"）[高]
 
 **运行流程（有中文行为注解佐证）**[高]:
@@ -138,7 +138,7 @@ TE MAN v3.8 新增节点模块，包含两个 ComfyUI 节点：**「TE MAN MOSS 
 
 ## 4. 外部依赖与副作用
 
-- **网络端点**：API 模式按 **OpenAI 兼容 `/responses`** 接口请求（字符串证据 `仅 API 使用；按 OpenAI 兼容的 /responses 接口调用`、`/responses`）；- `DEFAULT_API_MODEL = "deepseek-v4.1-flash"` [高=字符串]；默认 `DEFAULT_API_BASE_URL` 仅见常量名，结合样本 config.ini `api_base_url = https://teynex.com` 推断为 TE 网关 [中]。api_key 留空时读取 TE MAN 的 config.ini（`_resolve_api_key`）[高；具体 config 键名未确认]
+- **网络端点**：API 模式按 **OpenAI 兼容 `/responses`** 接口请求（字符串证据 `仅 API 使用；按 OpenAI 兼容的 /responses 接口调用`、`/responses`）；- `DEFAULT_API_MODEL = "deepseek-v4.1-flash"` [高=字符串]。**已确认：`DEFAULT_API_BASE_URL = "https://teynex.com"`（动态回填，且与节点参数 `api_base_url` 默认值一致）**。api_key 留空时读取 TE MAN 的 config.ini（`_resolve_api_key`）[高；具体 config 键名未确认]
 - **模块依赖**：`TE_Qwen_Image_2_1_Prompt_Enhancer` 模块的 `TEQwenImage21LocalStorage`——本地 llama.cpp（`models/LLM`、支持 `mmproj`）与 CLIP 的文本后端实现；未加载时报"未加载 Qwen 节点模块，无法使用本地 llama.cpp / 无法使用 API"。[高]
 - **文件系统**：
   - 读：`models/LLM` 下 gguf/mmproj 文件（枚举 `[高]`）、`C:\Windows\Fonts\*.ttc|ttf`、TE MAN `config.ini`（API key）
@@ -251,3 +251,103 @@ palette(最多 5 色)  bbox  role  type  text  desc
 msyhbd.ttc  msyh.ttc  simhei.ttf  arial.ttf  C:\Windows\Fonts\  load_default
 TE MAN MOSS 预览图保存失败: %s
 ```
+
+## 7. 动态 introspection 回填（Windows+ComfyUI 真机实测）
+
+> 数据来源：GitHub Actions Windows Server 2025 + ComfyUI（Python 3.13.16）真实环境 import 后的自省结果；运行时模块显示为 `custom_nodes.TE_image.TE_MAN_MOSS`（`TE_image` 为插件原名），模块文件 `D:\a\_temp\ComfyUI\custom_nodes\TE_MAN\TE_MAN_MOSS.pyd`。本节所有值均为运行时实锤，不再标注置信度。
+
+### 7.1 节点 INPUT_TYPES 全表（实锤）
+
+#### TE_image_pro_moss_layout（TEMossLayoutNode）
+
+注册元数据：`FUNCTION = "plan"`、`CATEGORY = "TE MAN/MOSS"`、`OUTPUT_NODE = True`、`RETURN_TYPES = ["STRING", "STRING", "IMAGE", "STRING"]`、`RETURN_NAMES = ["完整版式提示词", "元素列表", "版式预览图", "描述"]`；无 IS_CHANGED / VALIDATE_INPUTS / on_execute / check_lazy_status。节点 DESCRIPTION（原文）："输入一句话，自动扩写文案与画面，并按选中版式生成边界框，输出可直接喂给 MOSS-Image 的 layout 提示词。扩写可用 CLIP、本地 llama.cpp 或 API；选「只扩写(无框位)」只输出整图描述，选「直出(不进行任何处理)」则 prompt 原样输出。描述可接到「TE MAN MOSS 边界框」的上游描述。"
+
+**required**：
+
+| 参数名 | 类型 | 选项 / 约束 | 默认值 | tooltip（原文摘要） |
+|---|---|---|---|---|
+| `增强方式` | COMBO | `CLIP` / `本地 llama.cpp` / `API`（3 项） | `CLIP` | 扩写用哪个模型。三者互不影响，没选中的后端参数可以留空。 |
+| `prompt` | STRING, multiline | — | `一张音乐节海报` | 一句话需求。中文即可，模型会扩写成完整画面描述并保留中文文案。 |
+| `版式选择` | COMBO | `竖版海报` / `横版横幅` / `方形` / `自动排版(官方skill)` / `只扩写(无框位)` / `直出(不进行任何处理)`（6 项） | `竖版海报` | 内置版式骨架，坐标按比例存，换画布尺寸不用重算；「自动排版(官方skill)」由模型给每个槽位写位置，seed 变了版式也会变；「只扩写(无框位)」只输出扩写后的整图描述，不产生元素列表；「直出(不进行任何处理)」不调任何模型，prompt 原样传给下游。 |
+| `width` | INT | min 256 / max 4096 / step 16 | 1024 | 输出画布宽度，必须是 16 的倍数。 |
+| `height` | INT | min 256 / max 4096 / step 16 | 1536 | 输出画布高度，必须是 16 的倍数。 |
+| `max_length` | INT | min 256 / max 8192 / step 64 | 4096 | CLIP 与本地 llama.cpp 的生成上限（新增 token）；API 模式不发送此限制。 |
+| `seed` | INT | min 0 / max 281474976710655 / step 1 | 0 | CLIP 与本地 llama.cpp 使用；API 模式忽略。 |
+| `输出语言` | COMBO | `中文` / `英文`（2 项） | `中文` | 扩写出来的整图描述和元素描述用什么语言；JSON 字段、slot 名和 text/obj 结构值始终是英文。 |
+| `本地模型` | COMBO | `（请把模型放到 models/LLM）`（1 项） | —（无 default 键） | models/LLM 下的本地模型，仅「本地 llama.cpp」使用；其它方式不用管。 |
+| `生成后卸载本地模型` | BOOLEAN | — | True | 仅本地 llama.cpp。生成完就释放显存，避免和后面的 MOSS 出图抢显存；要连续调版式可以关掉。 |
+| `api_base_url` | STRING | 单行 | `https://teynex.com` | 仅 API 使用；按 OpenAI 兼容的 /responses 接口调用。 |
+| `API模型(responses格式)` | STRING | 单行 | `deepseek-v4.1-flash` | 仅 API 使用；填服务端 /responses 接口认识的模型名。 |
+| `api_key` | STRING | 单行 | `""` | 仅 API 使用；留空时读取 TE MAN 的 config.ini。 |
+
+**optional**：`clip`（CLIP，forceInput=True，tooltip "增强方式为 CLIP 时使用；其它方式接着也没关系。"）。**hidden**：无。
+
+#### TE_image_pro_moss_box（TEMossBoxNode）
+
+注册元数据：`FUNCTION = "compile"`、`CATEGORY = "TE MAN/MOSS"`、`OUTPUT_NODE = True`、`RETURN_TYPES = ["STRING", "STRING", "IMAGE"]`、`RETURN_NAMES = ["完整版式提示词", "元素列表", "版式预览图"]`。节点 DESCRIPTION（原文）："画布拖拽画框，选中后可编辑类型、文字、描述、调色板。可直接接「TE MAN MOSS 增强版式规划/增强提示词」的元素列表输出。"类 docstring 证实"ComfyUI 自带的 Create Bounding Boxes 只在 Nodes 2.0 下渲染画布控件，这个节点把同样的编辑方式做进普通 DOM 控件，旧前端同样可用"。
+
+**required**：
+
+| 参数名 | 类型 | 选项 / 约束 | 默认值 | tooltip（原文摘要） |
+|---|---|---|---|---|
+| `整图描述` | STRING, multiline | — | `""` | 不接「上游描述」时使用的整图描述，编译后成为 summary.caption。前端不显示这个输入框。 |
+| `boxes` | STRING, multiline | JSON 框列表 | 演示 JSON（见下） | 框列表 JSON，由画布自动维护。bbox 为 [ymin, xmin, ymax, xmax]，0-1000 整数，顺序与 ComfyUI 自带边界框一致。 |
+| `width` | INT | min 256 / max 4096 / step 16 | 1024 | （无 tooltip） |
+| `height` | INT | min 256 / max 4096 / step 16 | 1536 | （无 tooltip） |
+
+`boxes` 默认值（原文 JSON，演示数据实锤——`夏日音乐节` 挂 title（text 槽），`enormous cream serif capitals, centred` 是其 desc；`stage truss silhouettes, crowd, warm haze` 挂 hero（obj 槽））：
+
+```json
+[
+ {"role": "title", "type": "text", "text": "夏日音乐节",
+  "desc": "enormous cream serif capitals, centred", "bbox": [55, 70, 185, 930]},
+ {"role": "hero", "type": "obj",
+  "desc": "stage truss silhouettes, crowd, warm haze", "bbox": [285, 50, 750, 950]}
+]
+```
+
+**optional**：
+- `上游元素列表`（STRING，forceInput=True，tooltip "接「TE MAN MOSS 增强版式规划/增强提示词」的元素列表。连接后首次运行会把框载入画布，之后以画布编辑为准；上游内容变了会重新载入。"）
+- `上游描述`（STRING，forceInput=True，tooltip "可接上游的整图描述。连接后优先使用它。"）
+- `last_incoming`（STRING, multiline，默认 `""`，tooltip "内部状态：上一次已经载入画布的上游元素列表，由节点自己维护。"）——位于 **optional 分组而非 hidden**（§3.2 早先称"隐藏"按分组语义修正；前端确实不显示它）。
+
+**hidden**：无。
+
+### 7.2 模块常量实锤值（动态采集）
+
+pyd 模块 `TE_MAN.TE_MAN_MOSS`（运行时模块 docstring 原文："TE MAN MOSS\n\nMOSS-Image 版式规划与边界框。…刻意不使用 comfy_api 的 V3 类型（io.BoundingBoxes 等），所以在不开启 Nodes 2.0 的旧版前端里也能正常使用。"）：
+
+- `AUTO_PRESET = "自动排版(官方skill)"`；`CAPTION_PRESET = "只扩写(无框位)"`；`RAW_PRESET = "直出(不进行任何处理)"`
+- `PRESET_CHOICES = ["竖版海报", "横版横幅", "方形", "自动排版(官方skill)", "只扩写(无框位)", "直出(不进行任何处理)"]`（与版式选择下拉一致）
+- `DEFAULT_API_BASE_URL = "https://teynex.com"`（§4 推断转实锤）；`DEFAULT_API_MODEL = "deepseek-v4.1-flash"`；`DEFAULT_CONTEXT_LENGTH = 8192`（此前仅知名，未知名值）
+- `LOCAL_MODELS = ["（请把模型放到 models/LLM）"]`
+- `OBJECT_HINTS = ["hero", "object", "obj", "image", "photo", "visual", "scene", "panel", "illustration"]`（完整 9 项，与 JS 词表一致）
+- `LAYOUT_PRESETS`（完整实锤，`[role, type, (x, y, w, h)]` 0–1 比例）：
+  - `竖版海报`：title/text `[0.07, 0.055, 0.86, 0.13]`；subtitle/text `[0.07, 0.205, 0.72, 0.055]`；hero/obj `[0.05, 0.285, 0.9, 0.465]`；detail/text `[0.07, 0.775, 0.6, 0.075]`；footer/text `[0.07, 0.885, 0.45, 0.05]`
+  - `横版横幅`：title/text `[0.06, 0.14, 0.46, 0.3]`；subtitle/text `[0.06, 0.46, 0.4, 0.1]`；hero/obj `[0.42, 0.06, 0.52, 0.88]`；footer/text `[0.06, 0.82, 0.3, 0.06]`
+  - `方形`：title/text `[0.08, 0.08, 0.84, 0.15]`；hero/obj `[0.05, 0.26, 0.9, 0.5]`；caption/text `[0.08, 0.8, 0.84, 0.09]`
+  - `自动排版(官方skill)`：`null`（骨架由模型现场给框）
+- `REPLY_SHAPE = {"caption": "<caption>", "slots": {"<slot name>": {"text": "<visible copy>", "desc": "<appearance>"}}}`（**预设模式模板，无 type/bbox 键**——bbox 由 `_preset_elements` 落骨架时补，修正 §6.2 附录括注的对调）；`AUTO_REPLY_SHAPE`（自动排版模板，**含 `"type": "text|obj"` 与 `bbox` 键**）；`AUTO_LAYOUT_RULES` 全文与 §6.2 摘录一致，且开头明确 **"bbox": [xmin, ymin, xmax, ymax]**（模型侧 xyxy 顺序）、"Keep at least 40 units of clear margin"、"Two text boxes must never overlap"、"text 槽仅在需要叠字时使用，纯画面请求所有槽都是 obj"
+- `LANGUAGE_RULES`：中文→"caption must be 500-800 Chinese characters and never shorter than 500"；英文→"300-500 words and never shorter than 300"（与 §3.1 引文一致）
+- 函数 docstring 实锤：`_auto_bbox`（"模型给的 bbox（0-1000，xyxy）-> 0-1000 的 yxyx 整数框；不可用时返回 None"）、`_to_centered_bbox`（"与 comfy_extras/nodes_moss_image.py 的 MOSSImageLayoutPrompt 完全一致：先换回像素，小数边向外取整，再减去画布中心"）、`_build_layout_prompt`（"编译成 MOSS-Image 的 layout 提示词（单行紧凑 JSON）"）、`_generate_text`（"调 CLIPLoader 里那个文本模型。采样参数全部用 clip.generate 自己的默认值"）、`_fonts`（"按优先级找一个能显示中文的字体，找不到就退回 PIL 内置字体"）、`_split_elements`（"自动排版的兜底：按模型给的顺序纵向均分，留出边距"）、`_payload_bbox`（"兼容 bbox/box、四元数组、ymin.. 字典和 x/y/width/height 字典"）
+- `NODE_DISPLAY_NAME_MAPPINGS`：`TE_image_pro_moss_layout → "TE MAN MOSS 增强版式规划/增强提示词"`、`TE_image_pro_moss_box → "TE MAN MOSS 增强边界框/增强提示词"`
+
+### 7.3 "未确认"项核对结果
+
+| 原文位置 | 结论 |
+|---|---|
+| §2 `_fonts` 四字体优先顺序 | introspection 仅给 docstring（"按优先级…退回 PIL 内置字体"），顺序未采集，保持未确认 |
+| §3.1 输入参数表各键名/默认值 | **已确认：见 §7.1 全表（动态回填）**；`preset`→`版式选择`、`language`→`输出语言`、`max_output_tokens/context_length/unload`→`max_length`/`生成后卸载本地模型`、`api_model`→`API模型(responses格式)`；新增 `增强方式`、`seed` 两参数 |
+| §3.1.1 骨架 role 名与示例文案归属 | **已确认：骨架无示例文案；role 集合见 §7.2 LAYOUT_PRESETS（动态回填）**；demo 文案属 Box 节点 boxes 默认值 |
+| §3.1 骨架坐标按比例存 [中] | **已确认：0–1 比例 (x,y,w,h)（动态回填）** |
+| §3.1 尺寸 widgets 归属与默认值（MODULE 级未确认） | **已确认：两节点同有 width/height，均默认 1024×1536，min 256/max 4096/step 16（动态回填）**；"字号参数"不存在，归属疑问作废 |
+| §3.1 `无框位：当前只输出纯文本提示词` 行为提示 | 运行期 UI 消息未被 introspection 采集，保持原样 |
+| §3.1 Layout RETURN_TYPES/RETURN_NAMES 具体值 | **已确认：4 输出 `完整版式提示词/元素列表/版式预览图/描述`（动态回填）**；第四口名 `描述` 非"整图描述"，顺序亦与原推断不同 |
+| §3.1 `REPLY_SHAPE`（预设）与 `AUTO_REPLY_SHAPE`（自动）形状归属 | **已确认：无 type/bbox 的形状属 `REPLY_SHAPE`（预设模式），含 type/bbox 的属 `AUTO_REPLY_SHAPE`（自动排版）——§6.2 附录中两行括注对调，已修正（动态回填）** |
+| §3.2 Box 输出口（"与 Layout 同名子集推断 [中]"） | **已确认：`完整版式提示词/元素列表/版式预览图` 3 输出，恰为 Layout 前 3 项（动态回填）** |
+| §3.2 `last_incoming` 归属（"隐藏"） | **已确认：在 optional 分组（非 hidden），multiline STRING 默认 ""（动态回填）**；"前端不显示"由其内部状态 tooltip 佐证 |
+| §4 `DEFAULT_API_BASE_URL` 取值 [中] | **已确认：`https://teynex.com`（动态回填）** |
+| §4 `DEFAULT_CONTEXT_LENGTH` 名值 | **已确认：8192（动态回填）** |
+| §4 `_resolve_api_key` 具体 config 键名 | introspection 未采集 config 键名，保持未确认 |
+| §4 预览图保存路径与文件名格式 | introspection 未采集，保持未确认 |
+| §4 `thinking` 输入参数 | **已确认：运行时 INPUT_TYPES 无 `thinking` 参数（动态回填）**——该标识符非节点输入 |

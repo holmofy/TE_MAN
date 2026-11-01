@@ -41,7 +41,7 @@ ComfyUI **节点模块**（不在 `__init__.py:21-33` 的 `SKIP_MODULES` 中，�
 | 类名 | `TEImageCompressNode` | 限定名 `custom_nodes.TE_image.TE_Image_Compress.TEImageCompressNode` [高] |
 | FUNCTION | `compress_image` | `compress_image` + 限定名 `…TEImageCompressNode.compress_image` [高] |
 | RETURN_TYPES | `IMAGE` | `IMAGE`、`RETURN_TYPES`、`RETURN_NAMES` 均在池中 [高] |
-| OUTPUT_NODE | 未确认 | 池中仅见 `output`/`output_samples` 词符，无法判定是否设置 UI 输出 [未确认] |
+| OUTPUT_NODE | 未确认 | 池中仅见 `output`/`output_samples` 词符，无法判定是否设置 UI 输出 [未确认]。→ **已确认（动态回填）：`OUTPUT_NODE` 属性不存在（introspection 读出为 null），非输出节点，纯转换管线** |
 
 ## 3. 节点规格（TEImageCompressNode）
 
@@ -52,7 +52,7 @@ ComfyUI **节点模块**（不在 `__init__.py:21-33` 的 `SKIP_MODULES` 中，�
   - 其余参数：节点无 tooltip / 枚举文案字符串，除 `image` 外**未确认**是否还有其他参数。池中 `float` 一词更可能是 `float32`/`PyFloat` 词符碎片，不足以证明存在 FLOAT 输入 [未确认]。
 
 ### 3.2 返回
-- `RETURN_TYPES = (IMAGE,)`，返回名列表存在（`RETURN_NAMES` 串在池中，具体名称未确认；姊妹测试节点有"处理后图片"命名，本节点池中有"压缩后图片"——推断 RETURN_NAMES = `("压缩后图片",)` [中]）。
+- `RETURN_TYPES = (IMAGE,)`，返回名列表存在（`RETURN_NAMES` 串在池中，具体名称未确认；姊妹测试节点有"处理后图片"命名，本节点池中有"压缩后图片"——推断 RETURN_NAMES = `("压缩后图片",)` [中]）。→ **已确认（动态回填）：`RETURN_TYPES=("IMAGE",)`、`RETURN_NAMES=("压缩后图片",)`**。
 
 ### 3.3 关键行为（compress_image，按字符串流程还原 [中]）
 1. 接收 `image` 张量 → `_tensor_to_bhwc_array` 拆成批次逐样本处理（`batch`/`shape`/`ndim`/`stack`/`axis`/`insert`/`repeat` 词符）。维度校验失败时报"输入图像维度异常: "（`ValueError`）[高，消息直接证据]。
@@ -72,6 +72,7 @@ ComfyUI **节点模块**（不在 `__init__.py:21-33` 的 `SKIP_MODULES` 中，�
 - `image_codec.pyd` 侧同样存在 `encode_pil_image_to_api_bytes`（限定名 `custom_nodes.TE_image.image_codec.encode_pil_image_to_api_bytes`）及其返回注解 `Tuple[bytes, str, str]` [高]；spec/image_codec.md 第 3 节亦已将 `TE_Image_Compress` 列为该函数的消费方——两侧证据互证。
 - 复用含义：压缩编解码（格式选择、quality、MIME/扩展名判定、超 1MB 规则）全部集中在共享库；本节点只负责张量↔PIL 的批量搬运、按需触发与报告。image_codec 内部证据：`1MB`、`JPEG`、`quality`、`optimize`、`webp`、`png`、`_ENABLE_INPUT_IMAGE_COMPRESSION` 开关、消息"输入图像超过1MB，已单次JPEG压缩: " / "输入图像超过1MB，但JPEG压缩收益不足，保留PNG: " [高]。
 - 除 `encode_pil_image_to_api_bytes` 外，本节点未引用 ImageCodec 类 / ErrorCanvas / base64 解码等其它 codec 能力（池中无对应串）[高]。
+- 压缩阈值常量（image_codec 模块 `__dict__` 实测，动态回填）：**`_ENABLE_INPUT_IMAGE_COMPRESSION = True`（总开关，实锤布尔值）、`_INPUT_IMAGE_COMPRESS_THRESHOLD_BYTES = 1048576`（恰为 1MB = 1024×1024 字节）、`_INPUT_IMAGE_JPEG_QUALITY = 90`**——正文"PNG 超 1MB / quality=90"的全部数值均已实锤。
 
 ### 4.2 其他依赖与副作用
 - 网络：**无**（无 URL/端点/API Key 串；DLL 无 WS2_32）[高]。
@@ -151,3 +152,60 @@ Tuple[bytes, str, str]
 输入图像超过1MB，但JPEG压缩收益不足，保留PNG: 
 输入图像单次压缩失败，保留PNG: 
 ```
+
+## 动态 introspection 回填（Windows+ComfyUI 真机实测）
+
+> 数据来源：GitHub Actions `Windows-2025Server` + Python 3.13.16 + ComfyUI（`D:\a\_temp\ComfyUI`）真实加载本 pyd 后运行时 introspection。以下均为 `INPUT_TYPES()` 实际返回值与模块 `__dict__` 直接读出。
+
+### (a) INPUT_TYPES 实测全表
+
+```python
+{"required": {"image": ("IMAGE",)},
+ "optional": None,   # 运行时无 optional 组
+ "hidden": None}     # 运行时无 hidden 组
+```
+
+实测要点：
+- 全节点**仅一个参数** `image`（IMAGE 插槽），选项字典为空 dict——无 tooltip、无 min/max/step、无任何 UI 标志。正文 §3.1"除 image 外未确认是否还有其他参数"就此定论：**没有其他参数**。
+- 正文 §3.1 池中 `float` 词符疑为 FLOAT 输入的猜测可排除：无任何数值型输入。
+
+### (b) 节点元数据实测
+
+| 项 | 实测值 |
+|---|---|
+| 注册键 | `TE_image_pro_compress` |
+| 显示名 | `TE MAN 图片压缩` |
+| 类名 | `TEImageCompressNode`，模块 `custom_nodes.TE_image.TE_Image_Compress` |
+| `FUNCTION` | `compress_image` |
+| `CATEGORY` | `TE MAN/Utils` |
+| `OUTPUT_NODE` | **不存在**（introspection 读出 null）——**已确认**：非输出节点，纯 IMAGE→IMAGE 转换管线，与 §2.4 "未确认"项定论 |
+| `RETURN_TYPES` | `("IMAGE",)` **已确认** |
+| `RETURN_NAMES` | `("压缩后图片",)` **已确认**（正文 [中] 推断升级为实锤） |
+
+### (c) 模块常量实锤（运行时 `__dict__` 导出）
+
+| 常量 | 实测值 |
+|---|---|
+| `MODULE_DIR` / `PLUGIN_DIR` | `D:\a\_temp\ComfyUI\custom_nodes\TE_MAN`（真机安装目录；同一值的两个别名） |
+| `NODE_CLASS_MAPPINGS` / `NODE_DISPLAY_NAME_MAPPINGS` | 如上注册表 |
+| 其余 | 模块级无其他业务常量——**压缩阈值（1MB）与 quality（90）不在本模块**，全部收敛在 `image_codec` 模块（见 (d)） |
+
+### (d) 压缩阈值常量实锤（来自 `TE_MAN.image_codec` 模块 `__dict__`）
+
+正文 §4.1 "image_codec 侧存在 `_ENABLE_INPUT_IMAGE_COMPRESSION` 开关、具体读取方式未确认 [中]" 现已实锤（动态回填）：
+
+| 常量（`TE_MAN.image_codec` 模块级） | 实测值 | 含义 |
+|---|---|---|
+| `_ENABLE_INPUT_IMAGE_COMPRESSION` | `True` | 压缩总开关，默认启用 |
+| `_INPUT_IMAGE_COMPRESS_THRESHOLD_BYTES` | `1048576` | 压缩触发阈值，恰为 1 MB（1024×1024 字节） |
+| `_INPUT_IMAGE_JPEG_QUALITY` | `90` | 单次 JPEG 压缩质量 |
+
+即 §3.3 的压缩规则定论：**PNG 编码后体积 > 1048576 字节时，做单次 JPEG quality=90 压缩；仅当 JPEG 产物更小时才改用 JPEG，否则保留 PNG**——三个数值全部为运行时常量实锤，不再依赖姊妹测试节点文案推断。
+
+### (e) 对正文"未确认"项的核对结论
+
+- §2.4 `OUTPUT_NODE`：**已确认不存在**（非输出节点）。
+- §3.1 输入参数：**已确认仅 `image` 一个**，无 optional/hidden 组。
+- §3.2 `RETURN_NAMES=("压缩后图片",)`：**已确认**。
+- 压缩阈值 1MB / JPEG quality=90 / 总开关 `True`：**已确认**（常量在 `image_codec` 模块，见 (d)）。
+- `_compress_sample_once_if_needed` 内部调用链、完成日志的统计格式：introspection 不含方法体，仍为未确认。

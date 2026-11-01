@@ -62,9 +62,9 @@ TE_MAN（原始包名 TE_image）插件的**内部图像编解码支撑库**，�
 
 ### 2.4 模块级压缩配置常量 [高，名称直接出现]
 
-- `_ENABLE_INPUT_IMAGE_COMPRESSION`（开关，"enable"/"disable"/"isenabled"）
-- `_INPUT_IMAGE_COMPRESS_THRESHOLD_BYTES`（阈值；日志文本写明 **1MB**）
-- `_INPUT_IMAGE_JPEG_QUALITY`（JPEG 质量；具体数值未确认）
+- `_ENABLE_INPUT_IMAGE_COMPRESSION`（开关，"enable"/"disable"/"isenabled"）—— **已确认：默认 `True`（动态回填）**
+- `_INPUT_IMAGE_COMPRESS_THRESHOLD_BYTES`（阈值；日志文本写明 **1MB**）—— **已确认：`1048576`（= 1 MiB，动态回填）**
+- `_INPUT_IMAGE_JPEG_QUALITY`（JPEG 质量）—— **已确认：`90`（动态回填）**
 
 ## 3. 节点规格
 
@@ -89,7 +89,7 @@ TE_MAN（原始包名 TE_image）插件的**内部图像编解码支撑库**，�
 
 ### 文件系统
 - 无常规文件读写 [中]；只读访问 `%WINDIR%\Fonts` 下字体文件（`exists` 探测 [中]）。
-- 配置键：无 `config.ini` 相关字符串；压缩三项常量的来源（内置字面量 vs 环境变量）未确认。
+- 配置键：无 `config.ini` 相关字符串。压缩三项常量来源**已确认为编译期内置字面量**（动态回填：运行时 introspection 模块常量表中三者以确定的 Python 值 `True`/`1048576`/`90` 直接出现，不读环境变量）。另有模块级常量 `MODULE_DIR`（真机值 `D:\a\_temp\ComfyUI\custom_nodes\TE_MAN`），佐证字体回退路径候选中的模块目录来源。
 
 ### 网络
 - 无端点/URL 字符串（除 data URL scheme）。认证逻辑不在本模块。
@@ -221,5 +221,36 @@ TE_MAN_Chat.pyd:             encode_pil_image_to_api_bytes
 
 ### 未确认事项
 - 具体默认值（`cache_size`、`max_workers`、`_INPUT_IMAGE_JPEG_QUALITY` 数值、画布 `max_size` 尺寸）为编译期常量，未在字符串中出现：**未确认**。
-- `_log_codec_message` 完整签名：**未确认**。
+  - **已确认：`_INPUT_IMAGE_JPEG_QUALITY = 90`，压缩开关默认 `True`，压缩阈值 `1048576`（动态回填）**；`cache_size` / `max_workers` / 画布 `max_size` 属实例构造参数而非模块常量，**仍未确认**。
+- `_log_codec_message` 完整签名：**未确认**（introspection 未捕获业务函数 docstring，结论不变）。
 - `Tuple[int, int]`（`decode_start`/`decode_time` 域附近）的归属：**未确认**。
+
+## 动态 introspection 回填（Windows+ComfyUI 真机实测）
+
+> 数据源：GitHub Actions Windows + ComfyUI 真实环境运行时 introspection 快照（`te_man_introspection.json`），目标文件 `D:\a\_temp\ComfyUI\custom_nodes\TE_MAN\image_codec.pyd`。以下为运行时模块属性/命名空间实测，非字符串推断。
+
+### (a) 模块 docstring
+模块级 `__doc__` 为空（`doc = None`）。正文引用的三条自述句经运行时证实分别是**类 docstring** 而非模块级 docstring：
+- `ImageCodec`.__doc__ = `负责 Tensor/Base64 转换、缓存与实时预览构建。`
+- `ErrorCanvas`.__doc__ = `统一的错误画布与字体管理。`
+
+（类的 `__module__` 仍报 `custom_nodes.TE_image.image_codec`——尽管真机目录为 `TE_MAN`，编译期写入的包限定名保留为 `TE_image`，与 static 证据链一致。）
+
+### (b) 模块级常量（实锤值）
+| 常量 | 实测值 | 说明 |
+|---|---|---|
+| `_ENABLE_INPUT_IMAGE_COMPRESSION` | `True` | 输入图压缩默认开启 |
+| `_INPUT_IMAGE_COMPRESS_THRESHOLD_BYTES` | `1048576` | = 1 MiB，证实日志文案「输入图像超过1MB…」 |
+| `_INPUT_IMAGE_JPEG_QUALITY` | `90` | JPEG 质量因子（此前"具体数值未确认"→ **已确认**） |
+| `MODULE_DIR` | `D:\a\_temp\ComfyUI\custom_nodes\TE_MAN` | 真机运行目录，字体黄金候选回退路径之一 |
+
+常量表中不存在 `cache_size` / `max_workers` / 画布 `max_size` —— 它们是构造函数/调用参数，不在模块常量层。
+
+### (c) function_docs（编译保留的 docstring）
+模块命名空间中带 docstring 的对象仅捕获到 typing 类导入名：`Callable`、`Dict`、`List`、`Optional`、`Tuple`、`as_completed`（`concurrent.futures` 文档全文命中）。业务函数（`encode_pil_image_to_api_bytes` 等）在 Windows 运行时下未保留 docstring，无新增函数文档。导入名命名空间佐证：`OrderedDict`（LRU 底层结构）、`ThreadPoolExecutor`、`BytesIO` 均在模块命名空间中实锤存在。
+
+### (d) 未确认项核对结论
+- 压缩三项常量数值：**3/3 已确认**（`True` / `1048576` / `90`）。
+- 正文「文档串自述」归属（模块级 vs 类级）：**已确认属类级**。
+- 仍未确认：`cache_size`、`max_workers`、画布 `max_size` 默认值；`_log_codec_message` 签名；`Tuple[int, int]` 归属。
+- 佐证（consumers）：`nodes` 数据本批仅覆盖 30 个注册节点，其中未包含 `Jimeng_Video_Generator` / `Sora_2_Video_Generator` / `TE_HappyH_Video` / `TE_VEO_Video` 的 image_codec 引用明细（它们作为节点模块各自独立注册）；正文第 3 节"另被这 4 个节点引用"的静态结论维持不变。

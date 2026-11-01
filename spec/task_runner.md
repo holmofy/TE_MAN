@@ -190,9 +190,41 @@ Optional
 
 `.rdata` 中 `run`、`comfy` 等名附近：`9A 99 99 99 99 99 B9 3F`（double 0.1）、
 `00 00 00 00 00 00 F0 3F`（double 1.0）。用途未确认。
+（文末动态回填佐证：模块常量表实锤 `FIRST_COMPLETED = "FIRST_COMPLETED"`，为
+`concurrent.futures.wait` 的 `return_when` 参数回显值——0.1/1.0 与 `timeout` 轮询相关的推断不受影响，仍属局部量。）
 
 ### 6.6 复核命令
 
 ```bash
 strings -n 5 /Users/holmofy/Downloads/TE_MAN/task_runner.pyd | grep -E 'BatchGenerationRunner|task_runner|Interrupt|ensure_not'
 ```
+
+## 动态 introspection 回填（Windows+ComfyUI 真机实测）
+
+> 数据源：GitHub Actions Windows + ComfyUI 真实环境运行时 introspection 快照，目标文件 `D:\a\_temp\ComfyUI\custom_nodes\TE_MAN\task_runner.pyd`。以下为运行时模块属性/命名空间实测。
+
+### (a) 模块 docstring
+模块级 `__doc__` 为空。正文引用的两条中文自述经运行时证实归属如下：
+- `统一的批次任务调度器，负责线程池并发、进度条与日志回调。` = **类 `BatchGenerationRunner` 的 docstring**（运行时原文以此为准）；
+- `通过线程池或串行方式执行任务，并在每个结果返回时调用 progress_callback` = `BatchGenerationRunner.run` 的方法 docstring（静态已推定，运行时类存在佐证其归属）。
+类 `__module__` 报 `custom_nodes.TE_image.task_runner`（编译期包名保留，真机目录已为 TE_MAN）。
+
+### (b) 模块级常量（实锤值）
+| 常量 | 实测值 | 说明 |
+|---|---|---|
+| `FIRST_COMPLETED` | `"FIRST_COMPLETED"`（字符串回显） | 从 `concurrent.futures` 导入的 `wait` `return_when` 枚举值，模块级命名空间实锤 |
+
+该常量**直接实锤了 §3.3 推断流程第 3 步**：`concurrent.futures.wait(..., return_when=FIRST_COMPLETED)`——`FIRST_COMPLETED` 以模块级名字存在（而非 `concurrent.futures.FIRST_COMPLETED` 属性访问），与静态串池中 `return_when`/`FIRST_COMPLETED`/`completed`/`pending` 的组合完全吻合。
+
+**关键负证据**：`max_workers`、`timeout`、`ensure_not_interrupted`、`progress_bar_factory`、`InterruptProcessingException` 均未出现在模块级常量表——
+- 它们不是模块级函数/常量，而是**类方法参数 / 实例属性 / 调用方注入回调**（强化 §2 对 `ensure_not_interrupted`"调用方注入回调"的 [中] 推断：该名连类级名字都不是，只能是参数或调用方作用域名）；
+- `InterruptProcessingException` 非本模块模块级定义，结合类命名空间亦未捕获到它，维持"从 `comfy.model_management` 导入或在方法内引用"的两可结论（导入动作属模块执行副作用，名字挂在导入态而非常量态）。
+
+### (c) function_docs（编译保留的 docstring）
+模块命名空间中带 docstring 的对象捕获到 `concurrent.futures.wait` 的**完整标准库 docstring**（`fs`/`timeout`/`return_when` 参数说明，`FIRST_COMPLETED`/`FIRST_EXCEPTION`/`ALL_COMPLETED` 选项）——佐证本模块确实以 `wait(..., timeout=..., return_when=...)` 形式调用（`timeout` 参数名与 docstring 形参名一致，§3.2 `timeout` 归属推断获得标准库文档侧证）。另捕获 typing 导入名 `Callable`/`List`/`Optional`。类命名空间实锤：`BatchGenerationRunner`（本模块自有类）、`ResultType`/`TaskType`（TypeVar，运行时落到 builtins 文档回显）、`ThreadPoolExecutor`。
+
+### (d) 未确认项核对结论
+- `__init__`/`run` 具体签名与默认值：维持未确认（introspection 未下钻方法签名）。
+- `timeout` 与 0.1/1.0 double 常量的用途：维持未确认（`wait` docstring 侧证 `timeout` 是 `wait` 的标准形参）。
+- `InterruptProcessingException` 定义处：维持两可（新负证据：非模块级常量名）。
+- 佐证（consumers）：`nodes` 数据显示 `TE_image_pro_gpt_image_2`、`TE_image_pro_banana`、`TE_image_pro_grok_image`、`TE_image_pro_grok_video`、`TE_image_pro_sora2_video`、`TE_image_pro_happyh_video`、`TE_image_pro_te_veo_video`、`TE_image_pro_special_async2`（module=`TE_MAN.Grok_Safe_PY`）与 `TE_image_pro_jimeng_video_2`（module=`custom_nodes.TE_image.Jimeng_Video_Generator`）等图像/视频生成节点全部经 `FUNCTION: generate_images` 提交——与"批次任务调度器服务于多任务并发生成节点"的定位吻合。

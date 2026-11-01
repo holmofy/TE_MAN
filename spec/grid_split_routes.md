@@ -120,7 +120,31 @@ exif_transpose  convert  strip  format  uuid4  _crop_  te_crop
   → 推断：**pyd 是较新版本，把图片信息路径解析委托给了共享的 `save_image_with_output_core.resolve_image_info_path`（或经 `grid_split_core._resolve_shared_image_info_path` 转发）**，而不是在 `_resolve_ui_image_path` 内联实现目录白名单和路径穿越校验；`_resolve_ui_image_path` 在 pyd 中仍保留有函数（qualname 仍注册），推测为委托包装或兼容入口 [中]。
 - 其余行为（两个路由、载荷键、裁切逻辑、文件名生成、错误消息）pyd 与 .py 一致 [高]。
 - 未确认项：`temp` 目录类型分支、`x`/`y` crop 键、pyd 版对共享解析器的确切调用点（from-import 还是属性访问）。
+- 运行时佐证（动态回填）：真机 introspection 中 `server.PromptServer` 出现在本模块命名空间（导入实锤），`pathlib.Path` 为模块级导入；`aiohttp` 路由对象与 `folder_paths` 系函数未以模块常量形态列出（经属性访问使用，符合静态推断）。§7 的"共享解析层下沉"结论不变。
 
 ## 7. 版本差异结论
 
 `grid_split_routes.pyd` ≈ `grid_split_routes.py` 的进化版：功能不变（两个标准格分/裁切路由），实现上把路径解析与目录穿越校验下沉到共享核心库 `save_image_with_output_core`，与 `grid_split_core`（其 pyd 同样引用 `resolve_image_info_path`）形成统一的"共享图片信息解析"层。明文 .py 是较旧的内联实现，可继续作为行为参照。
+
+## 动态 introspection 回填（Windows+ComfyUI 真机实测）
+
+> 数据源：GitHub Actions Windows + ComfyUI 真实环境运行时 introspection 快照，目标文件 `D:\a\_temp\ComfyUI\custom_nodes\TE_MAN\grid_split_routes.pyd`。以下为运行时模块属性/命名空间实测。
+
+### (a) 模块 docstring
+模块级 `__doc__` 为空；模块命名空间中无本模块自有类（`Path`、`PromptServer` 均为导入），无新增自述文案。
+
+### (b) 模块级常量（实锤值）
+运行时常量表为 `null`——**本模块没有任何模块级常量**（与静态观察吻合：路由路径 `/te_image/grid_split`、`/te_image/crop_image`、状态码 400/404/500、错误文案均为函数内局部量，无需常量承载）。运行时命名空间类名单：
+| 名字 | 来源模块 | 说明 |
+|---|---|---|
+| `Path` | `pathlib` | 文件路径操作 |
+| `PromptServer` | `server`（ComfyUI） | **路由注册前提的导入实锤**（§4"仅当 PromptServer.instance 可用时注册路由"的静态推断获得运行时命名空间侧证） |
+
+### (c) function_docs（编译保留的 docstring）
+无（`function_docs` 键在此模块缺失/为空；六个公开函数 `_json_error`、`_resolve_ui_image_path`、`_sanitize_filename_stem`、`crop_image_to_input_file`、`te_image_grid_split`、`te_image_crop_image` 均无 docstring 保留）。
+
+### (d) 未确认项核对结论
+- `temp` 目录类型分支：维持未确认（分支逻辑在共享解析库中，本模块命名空间无直接证据）。
+- `x`/`y` crop 键：维持未确认。
+- pyd 对共享解析器的调用点形式（from-import vs 属性访问）：**倾向 from-import/委托**——若为属性访问（`save_image_with_output_core.resolve_image_info_path`），introspection 的类命名空间通常会连带出现 `save_image_with_output_core` 模块对象；本模块命名空间仅见 `Path`/`PromptServer` 两个非 typing 导入类，共享核心库的对象不在其中，说明引用经 `grid_split_core` 转发或函数内局部 import（仍非定论，但排除"模块级属性访问"一种可能）。
+- 路由注册行为：维持 [高]（`PromptServer` 导入实锤 + 静态字符串证据）。

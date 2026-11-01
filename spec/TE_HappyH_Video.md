@@ -21,8 +21,9 @@
   - 分辨率：`_normalize_resolution_name(resolution?)`、`_ratio_to_size(ratio?, ...)`（tooltip：`会转换成 size，例如 16:9 -> 1280x720` [高]）
 - 类 `TEHappyHVideoNode`：唯一节点类，方法 `INPUT_TYPES`、`_resolve_mode_and_model(mode?, image_count?)`、`_build_multipart_parts(prompt_text?, model_name?, image_files?, duration? ...)`、`generate_video` [高]。
 - 模块常量 [高，名称]：`_MODE_AUTO / _MODE_T2V / _MODE_I2V / _MODE_R2V`、`_MODE_TO_MODEL`、`_FIXED_MODEL_NAME`、`_FIXED_RESOLUTION_NAME`、`_RATIO_OPTIONS`、`_DEFAULT_BASE_URL`、`CONFIG_MANAGER`、`PLUGIN_DIR`、`MODULE_DIR`、`_HAS_COMFY_VIDEO`。
-  - `_MODE_*` 对应中文选项标签：`自动` / `文生视频` / `首帧生视频` / `多图参考` [高]。
-  - `_DEFAULT_BASE_URL` 的具体值 未确认（`_resolve_key_and_url` 在节点 api_url 留空时经 `config_manager.get_effective_api_base_url` 读取 config.ini [中]，见 §4）。
+  - `_MODE_*` 对应中文选项标签：`自动` / `文生视频` / `首帧生视频` / `多图参考` [高] —— **已确认：`_MODE_AUTO="自动"`、`_MODE_T2V="文生视频"`、`_MODE_I2V="首帧生视频"`、`_MODE_R2V="多图参考"`（动态回填）**。
+  - **常量值已确认（动态回填）**：`_DEFAULT_BASE_URL = ""`（空串！无硬编码默认 URL，全靠 config.ini 或节点输入）、`_FIXED_MODEL_NAME = "happyhorse-video"`、`_FIXED_RESOLUTION_NAME = "720P"`、`_MODE_TO_MODEL = {"文生视频": "happyhorse-video", "首帧生视频": "happyhorse-video", "多图参考": "happyhorse-video"}`（各模式映射值全部实锤，均为 `happyhorse-video`）、`_RATIO_OPTIONS = ["16:9","9:16","1:1","4:3","3:4","4:5","5:4","9:21","21:9"]`（顺序实锤）、`_HAS_COMFY_VIDEO = True`。
+  - **UI 形参名修正（动态回填）**：比例下拉的最终形参名为 **`ratio`**（非 `ratio`/`aspect_ratio` 存疑状态，实锤为 `ratio`）。
 - ComfyUI 节点注册 [高]：`NODE_CLASS_MAPPINGS` 键 `TE_image_pro_happyh_video`，显示名 `TE MAN HappyH Video`，`CATEGORY: TE MAN/HappyHorse`，`FUNCTION: generate_video`，`RETURN_TYPES / RETURN_NAMES / OUTPUT_NODE / INPUT_TYPES / tooltip / required / optional` 字符串均存在 [高]。
 
 ## 3. 与 TE_Prompt_Text 的 TE_H3_REFERENCES 对接（H3 参考素材机制）
@@ -48,40 +49,37 @@
 
 | 选项 | 内部常量 | 行为（均来自中文串 [高]） |
 |---|---|---|
-| `自动`（疑默认 [中]） | `_MODE_AUTO` | tooltip：`自动：无图=文生视频，1图=首帧生视频，多图=多图参考` |
+| `自动`（疑默认 [中]） | `_MODE_AUTO` | tooltip：`自动：无图=文生视频，1图=首帧生视频，多图=多图参考` —— **已确认：默认 `自动`（动态回填）** |
 | `文生视频` | `_MODE_T2V` | `文生视频模式不接收图片；如需传图请选择自动` |
 | `首帧生视频` | `_MODE_I2V` | `首帧生视频模式必须且只能输入 1 张图片` |
 | `多图参考` | `_MODE_R2V` | `多图参考模式需要 1-9 张参考图`；上限校验 `HappyHorse 多图参考最多支持 9 张图片，当前输入 N 张` |
 
-`_MODE_TO_MODEL` 将模式映射到模型名；`_FIXED_MODEL_NAME = happyhorse-video` [高]，故各模式模型大概率均为 `happyhorse-video` [中]。`不支持的模式: ` 为模式归一化失败报错 [高]。
+`_MODE_TO_MODEL` 将模式映射到模型名 —— **已确认：三模式（文生视频/首帧生视频/多图参考）映射值均为 `happyhorse-video`（动态回填）**。`不支持的模式: ` 为模式归一化失败报错 [高]。
 
 ### 4.2 输入参数（INPUT_TYPES）
 
-类型名 `STRING / INT / BOOLEAN / IMAGE / VIDEO` 与 `required / optional / tooltip / multiline / default / min / max` 键均存在 [高]。分组与默认值为推断 [中]，置信度逐项标注：
+类型名 `STRING / INT / BOOLEAN / IMAGE / VIDEO` 与 `required / optional / tooltip / multiline / default / min / max` 键均存在 [高]。分组与默认值已由动态回填（§7.2）全部实锤，下表为原静态分析标注：
 
-**required [中，分组归属推断]**
-- `prompt`：STRING multiline，tooltip `用于生成视频的提示词`；空值报错 `请输入 prompt` [高]。内置示例文案（疑为 default/placeholder [中]）：`一座由硬纸板和瓶盖搭建的微型城市，在夜晚焕发出生机` + `一列硬纸板火车缓缓驶过，小灯点缀其间，照亮前路`（两行连续字符串 [高]）。
-- `mode`：下拉（§4.1）[高，选项证据]。
-- `duration`：INT，tooltip `视频时长（秒），范围 3-15` [高]；默认值 未确认。
-- `resolution`：下拉，经 `_normalize_resolution_name` 归一化；字面量 `720p / 720P / 1080p / 1080` 均出现 [高]，疑为两档 `720p / 1080p`（大小写归一）[中]；日志 `Resolution name: ` / `Resolution: ` [高]。
-- 比例：`_RATIO_OPTIONS` 下拉 [高，名称]，字面量选项 **`16:9 / 9:16 / 1:1 / 4:3 / 3:4 / 21:9 / 9:21 / 4:5 / 5:4`** 共 9 项 [高，字符串逐一命中]；`_ratio_to_size` 把比例换算成提交尺寸（`会转换成 size，例如 16:9 -> 1280x720` [高]；`720`/`1080` 常量参与换算，按 resolution 档换算 [中]）。参数名（ratio/aspect_ratio）未确认。
-- 图像：`image_1`…`image_9`，IMAGE 类型 [高，名与 JS 互证]。`image_1` 标签/tooltip `首帧/参考图 1`，`image_2`…`image_9` 标签 `参考图 2`…`参考图 9` [高]。各 image 输入带 `control_after_generate` [中，仅字符串存在]。
+**required [已确认分组（动态回填）]**：`prompt / api_key / api_base_url / mode / ratio / duration` 六项。
+- `prompt`：STRING multiline，tooltip `用于生成视频的提示词。多图参考模式可用 [Image 1]、[Image 2] 指代图片。`（tooltip 全文实锤，原碎片拼接推断证实），带 `defaultInput: true` 标记 [高]；空值报错 `请输入 prompt` [高]。默认值实锤：`一座由硬纸板和瓶盖搭建的微型城市，在夜晚焕发出生机。一列硬纸板火车缓缓驶过，小灯点缀其间，照亮前路。`（动态回填）。
+- `mode`：下拉（§4.1），枚举 `["自动","文生视频","首帧生视频","多图参考"]`，默认 `自动`（动态回填）。
+- `ratio`：下拉，**形参名实锤为 `ratio`**，枚举 9 项（顺序见 §2 常量回填），默认 `16:9`，tooltip `会转换成 size，例如 16:9 -> 1280x720`（动态回填）。
+- `duration`：**已确认：STRING 单选下拉（非 INT），枚举 `["3","4","5","6","7","8","9","10","11","12","13","14","15"]` 共 13 档，默认 `"5"`**，tooltip `视频时长（秒），范围 3-15`（动态回填）。
+- `api_key`：STRING 单行，默认 `""`，tooltip `API Key；留空则读取 config.ini`（动态回填：归入 required）。
+- `api_base_url`（正文原记 `api_url`）：STRING 单行，默认 `""`，tooltip `API 地址，例如 https://newapi.xxx.com 或完整的 /v1/videos 地址`（动态回填：归入 required，形参名实锤为 `api_base_url`）。
 
-**optional [中]**
-- `api_key`：STRING，tooltip `API Key；留空则读取 config.ini` [高]；缺省报错 `请在 config.ini 中配置 API Key 或在节点中填写` [高]。
-- `api_url`：STRING，tooltip `API 地址，例如 https://newapi.xxx.com 或完整的 /v1/videos 地址` [高]（既可填 base 也可填完整提交端点，`_resolve_submit_url` 兼容两者）；缺省报错 `请在 config.ini 中配置 API URL 或在节点中填写，例如 https://newapi.xxx.com` [高]。
-- `bypass_proxy`：BOOLEAN，tooltip `需要忽略系统代理/梯子时开启` [高]（对应 `trust_env=False` [中]）。
-- `seed`：INT + `control_after_generate` [高，字符串存在]；tooltip 疑为 `仅供 ComfyUI 工作流使用；不会写入请求体` [中，tooltip 文案与 seed 场景匹配]；是否写入提交体 未确认。
-- `poll_interval_s`：INT，tooltip `轮询间隔（秒），官方建议约 15 秒` [高]；默认值 未确认。
-- `timeout_s`（UI 名或为 max_wait 类，未确认）：INT，tooltip `任务最长等待时间（秒）` [高]；默认值 未确认。
-
-`watermark` 字符串存在 [高]：疑为提交体字段或布尔输入；是否暴露为 UI 参数 未确认。
+**optional [已确认分组（动态回填）]**：`seed / image_1…image_9 / poll_interval_s / timeout_s / 绕过代理`。
+- `seed`：INT，默认 `-1`，min `-1` / max `2147483647`，`control_after_generate` 开启，tooltip `仅供 ComfyUI 工作流使用；不会写入请求体`（原 tooltip 推断证实，动态回填）；**不写入请求体已由 tooltip 直证**。
+- `image_1`…`image_9`：IMAGE ×9，tooltip `首帧/参考图 1`、`参考图 2`…`参考图 9` [高]；**不带 control_after_generate**（原 [中] 推断修正，动态回填）。
+- `poll_interval_s`：INT，默认 `15`，min `5` / max `60`，tooltip `轮询间隔（秒），官方建议约 15 秒`（动态回填）。
+- `timeout_s`：INT，默认 `900`，min `120` / max `3600`，tooltip `任务最长等待时间（秒）`（形参名实锤 `timeout_s`，动态回填）。
+- `绕过代理`（正文原记 `bypass_proxy`）：BOOLEAN，默认 `false`，tooltip `需要忽略系统代理/梯子时开启`（动态回填）。
+- `resolution` 下拉**未暴露**：INPUT_TYPES 无 resolution 参数（原 §4.2 "resolution 疑为两档 720p/1080p" 修正——分辨率档位不作为 UI 输入，`_FIXED_RESOLUTION_NAME = "720P"` 内部固定，动态回填）。
+- `watermark` 字符串存在 [高]：**已确认：不是 UI 参数**（INPUT_TYPES 无此项，仅疑为提交体内部字段，动态回填）。
 
 ### 4.3 返回（RETURN_TYPES / RETURN_NAMES）
 
-- `RETURN_TYPES / RETURN_NAMES / OUTPUT_NODE` 字符串存在 [高]；类型池中出现 `VIDEO` [高]。
-- 结合 `VideoFromFile`（`comfy_api.input_impl`）与 `_HAS_COMFY_VIDEO` 可选导入标志 [高]，推断返回 **`VIDEO`**（用 ComfyUI VideoFromFile 包装下载的 mp4）[中]；`_HAS_COMFY_VIDEO=False` 时的回退行为（直接返回路径/报错）未确认。
-- OUTPUT_NODE 行为：下载并预览视频（`results` + ui 输出模式 [中]）。完整 RETURN_NAMES 未确认。
+- **已确认（动态回填）：`RETURN_TYPES = [VIDEO, STRING, STRING, STRING]`，`RETURN_NAMES = ["video", "video_url", "task_id", "response"]`，`OUTPUT_NODE = True`**。类型池中出现 `VIDEO` [高]。`VideoFromFile`（`comfy_api.input_impl`）包装下载的 mp4；`video_url` 输出下载地址、`task_id` 输出任务 ID、`response` 输出响应摘要；`_HAS_COMFY_VIDEO = True`（标准环境恒走 VIDEO 分支）。OUTPUT_NODE 行为：下载并预览视频（`results` + ui 输出模式 [中]）。
 
 ### 4.4 关键行为流程（generate_video）
 
@@ -144,4 +142,74 @@
 
 **前端桥接（te_prompt_text.js）**：`'TE_image_pro_happyh_video':{'imageInputs':Array['from']({'length':0x9},…{'name':'image_'+(n+1),'label':'图片'+(n+1),'insertText':'图'+(n+1)})}`；`ensureH3ReferenceOutput(_0x…)&&…addOutput('H3参考素材','TE_H3_REFERENCES')`；`ensureH3ReferenceInput(…)&&…addInput('H3参考素材','TE_H3_REFERENCES')`（后者作用于 `TE_H3_Prompt_Enhancer`）。
 
-**未确认清单**：`_DEFAULT_BASE_URL` 具体值；`duration/poll_interval_s/timeout_s/mode/resolution` 默认值；ratio 参数名；`watermark` 是否为 UI 参数；`seed` 是否写入请求体；完整 `RETURN_NAMES`；`_HAS_COMFY_VIDEO=False` 回退；下载文件名时间戳格式；`_MODE_TO_MODEL` 各模式映射值（推测均为 `happyhorse-video`）；服务端解析 `图N` 还是 `[Image N]` 标记。
+**未确认清单（回填前）**：`_DEFAULT_BASE_URL` 具体值；`duration/poll_interval_s/timeout_s/mode/resolution` 默认值；ratio 参数名；`watermark` 是否为 UI 参数；`seed` 是否写入请求体；完整 `RETURN_NAMES`；`_HAS_COMFY_VIDEO=False` 回退；下载文件名时间戳格式；`_MODE_TO_MODEL` 各模式映射值（推测均为 `happyhorse-video`）；服务端解析 `图N` 还是 `[Image N]` 标记。
+> → 其中大部分已在下方 §7 动态回填中关闭，剩余项见 §7.4。
+
+## 7. 动态 introspection 回填（Windows+ComfyUI 真机实测）
+
+> 数据来源：GitHub Actions 真实环境（`Windows-2025Server-10.0.26100`，Python 3.13.16，ComfyUI 目录 `D:\a\_temp\ComfyUI`，插件包 `custom_nodes/TE_MAN`）运行时 introspection 导出（`te_man_introspection.json`）。
+> **包装层说明（重点）**：TE_HappyH_Video.pyd 的 `TEHappyHVideoNode` 是 pyd 基类；运行时 ComfyUI 实际注册的类是明文包装层 `Grok_Safe_PY.py` 中的 **`TE_MAN.Grok_Safe_PY.TEHappyHVideoSafePyNode`**（SafePy 类包装 pyd 基类）。`Grok_Safe_PY` 模块自身运行时 `NODE_CLASS_MAPPINGS` 为空 dict，最终注册映射为 `TE_image_pro_happyh_video → TEHappyHVideoSafePyNode`。下表即包装层最终暴露的参数表（SafePy 透传基类 INPUT_TYPES，无增减）。
+
+### 7.1 节点注册（运行时实锤）
+
+| 项 | 值 |
+|---|---|
+| 注册名 | `TE_image_pro_happyh_video` |
+| 运行时类 | `TE_MAN.Grok_Safe_PY.TEHappyHVideoSafePyNode`（包装 pyd 基类 `custom_nodes.TE_image.TE_HappyH_Video.TEHappyHVideoNode`） |
+| 显示名 | `TE MAN HappyH Video` |
+| `FUNCTION` | `generate_video` |
+| `CATEGORY` | `TE MAN/HappyHorse` |
+| `OUTPUT_NODE` | `True` |
+| 节点 doc | 无（`doc = null`，SafePy 包装类未透出基类 docstring） |
+
+pyd 模块常量实锤（`TE_MAN.TE_HappyH_Video`，module file `TE_HappyH_Video.pyd`）：
+
+```
+NODE_CLASS_MAPPINGS        = {TE_image_pro_happyh_video: TEHappyHVideoNode}   # pyd 侧原始映射
+NODE_DISPLAY_NAME_MAPPINGS = {TE_image_pro_happyh_video: TE MAN HappyH Video}
+MODULE_DIR = PLUGIN_DIR    = D:\a\_temp\ComfyUI\custom_nodes\TE_MAN
+_HAS_COMFY_VIDEO           = True
+_DEFAULT_BASE_URL          = ""        # 空串，无硬编码默认 URL
+_FIXED_MODEL_NAME          = "happyhorse-video"
+_FIXED_RESOLUTION_NAME     = "720P"
+_MODE_AUTO = "自动"   _MODE_T2V = "文生视频"   _MODE_I2V = "首帧生视频"   _MODE_R2V = "多图参考"
+_MODE_TO_MODEL             = {"文生视频": "happyhorse-video",
+                              "首帧生视频": "happyhorse-video",
+                              "多图参考": "happyhorse-video"}
+_RATIO_OPTIONS             = ["16:9","9:16","1:1","4:3","3:4","4:5","5:4","9:21","21:9"]
+```
+
+### 7.2 INPUT_TYPES 全表（运行时实锤，包装层最终暴露参数表）
+
+**required：**
+
+| 参数 | 类型 | 枚举/约束 | 默认值 | tooltip 摘要 |
+|---|---|---|---|---|
+| `prompt` | STRING | multiline，`defaultInput: true` | `一座由硬纸板和瓶盖搭建的微型城市，在夜晚焕发出生机。一列硬纸板火车缓缓驶过，小灯点缀其间，照亮前路。` | 用于生成视频的提示词。多图参考模式可用 [Image 1]、[Image 2] 指代图片。 |
+| `api_key` | STRING | 单行 | `""` | API Key；留空则读取 config.ini |
+| `api_base_url` | STRING | 单行 | `""`（空 = 走 config.ini） | API 地址，例如 https://newapi.xxx.com 或完整的 /v1/videos 地址 |
+| `mode` | ["自动","文生视频","首帧生视频","多图参考"] | 下拉 | `自动` | 自动：无图=文生视频，1图=首帧生视频，多图=多图参考。 |
+| `ratio` | ["16:9","9:16","1:1","4:3","3:4","4:5","5:4","9:21","21:9"] | 下拉（9 档） | `"16:9"` | 会转换成 size，例如 16:9 -> 1280x720 |
+| `duration` | ["3","4","5","6","7","8","9","10","11","12","13","14","15"] | 下拉（13 档） | `"5"` | 视频时长（秒），范围 3-15 |
+
+**optional：**
+
+| 参数 | 类型 | 枚举/约束 | 默认值 | tooltip 摘要 |
+|---|---|---|---|---|
+| `seed` | INT | min -1 / max 2147483647，`control_after_generate` 开启 | `-1` | 仅供 ComfyUI 工作流使用；不会写入请求体 |
+| `image_1` / `image_2` / `image_3` / `image_4` / `image_5` / `image_6` / `image_7` / `image_8` / `image_9` | IMAGE ×9 | — | — | 首帧/参考图 1；参考图 2 … 参考图 9 |
+| `poll_interval_s` | INT | min 5 / max 60 | `15` | 轮询间隔（秒），官方建议约 15 秒 |
+| `timeout_s` | INT | min 120 / max 3600 | `900` | 任务最长等待时间（秒） |
+| `绕过代理` | BOOLEAN | — | `false` | 需要忽略系统代理/梯子时开启 |
+
+**未暴露项修正**：`resolution` 不作为 UI 输入（`_FIXED_RESOLUTION_NAME="720P"` 内部固定，原"疑为 720p/1080p 两档下拉"关闭）；`watermark` 不是 UI 参数；`api_url`→实锤形参名 `api_base_url`；`bypass_proxy`→实锤 UI 名 `绕过代理`；`duration` 为 STRING 下拉而非 INT。
+
+### 7.3 返回值（运行时实锤）
+
+`RETURN_TYPES = [VIDEO, STRING, STRING, STRING]`，`RETURN_NAMES = ["video", "video_url", "task_id", "response"]`，`OUTPUT_NODE = True`。
+
+### 7.4 回填后仍未确认项
+
+- 下载文件名时间戳格式（`te_happyh_video_` 前缀之后的部分）——函数体不可见。
+- `_HAS_COMFY_VIDEO=False` 时的回退返回形态——真机环境恒为 True，未触发。
+- 服务端解析 `图N`（前端 chip 标记）还是 `[Image N]`（tooltip 文档标记）——属服务端行为，introspection 不可见；但 tooltip 实锤全文 `多图参考模式可用 [Image 1]、[Image 2] 指代图片` 支持 `[Image N]` 为 API 侧标记的推断。

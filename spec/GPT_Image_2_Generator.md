@@ -254,3 +254,64 @@ torch List[torch.Tensor] requests session
 - 本节点向 GeminiApiClient 调用的确切方法名（send_openai_request / poll_openai_task 等在 api_client 中存在，但本 pyd 未直接出现这些名；本模块自建 `_poll_gpt_image_2_task` 等自有方法）——未确认。
 - `filename_prefix` 的实际用途（未见磁盘写盘证据）——未确认。
 - 前端 JS 曾含 `TE_image_pro_special_async2` 等其他节点，与本模块无关，勿混淆。
+
+## 7. 动态 introspection 回填（Windows+ComfyUI 真机实测）
+
+> 数据来源：GitHub Actions Windows 环境真实加载采集（`Windows-2025Server-10.0.26100`，Python 3.13.16，ComfyUI 目录 `D:\a\_temp\ComfyUI`，TE_MAN 无导入错误）。实际注册类是明文包装层 `TE_MAN.Grok_Safe_PY.TEGPTImage2SafePyNode`（经 `zzzz_grok_autoscale_patch` 以同名注册键覆盖），下表为**包装层最终暴露**的完整参数表；pyd 基类 `TEGPTImage2Node` 的内部行为不受影响。
+
+### 7.1 运行时 INPUT_TYPES 全表（`TE_image_pro_gpt_image_2`，包装层暴露）
+
+**required：**
+
+| 参数 | 类型 | 选项 / 默认值 | 约束 | tooltip（原文） |
+|---|---|---|---|---|
+| `prompt` | STRING multiline | 默认 `一只戴着墨镜的白色猫咪，电影感，细节丰富` | — | `gpt-image-2 提示词` |
+| `api_key` | STRING | 默认 `""` | — | `API Key；留空则使用 config.ini 中配置` |
+| `api_base_url` | STRING | 默认 `""` | — | `服务地址；留空则使用 config.ini 中配置` |
+| `batch_size` | INT | 默认 `1` | min 1 / max 8 | `生成批次数量；每个批次生成 1 张图` |
+| `分辨率(价格不同)` | combo | `1K, 2K, 4K`，默认 `1K` | — | `1K / 2K / 4K；分辨率不同,价格不同。` |
+| `size` | combo | `Auto, 1:1, 16:9, 9:16, 3:2, 2:3, 4:3, 3:4, 5:4, 4:5, 7:3, 3:7`（**12 项，Auto 为首选项**），默认 `16:9` | — | `选择需要生成的分辨率比例。` |
+
+**optional：**
+
+| 参数 | 类型 | 选项 / 默认值 | 约束 | tooltip（原文） |
+|---|---|---|---|---|
+| `seed` | INT | 默认 `-1` | min -1 / max 102400 / `control_after_generate: true` | `仅用于 ComfyUI 工作流记录，不写入请求体。` |
+| `image_1` … `image_9` | IMAGE（9 个口） | — | — | `参考/编辑输入图像 N（可选）` |
+| `线路选择` | combo | `线路1, 线路2`，默认 `线路1` | — | `线路1：1K 图生图走 edits 但模型保持 gpt-image-2，2K/4K 保持原线路。线路2：统一走 edits，且 1K 改用 gpt-image-2-1k。`（与 §3.3 日志原文互证） |
+| `绕过代理` | BOOLEAN | 默认 `false` | — | `需要忽略系统代理/梯子时开启` |
+| `快捷功能` | combo | `无, 白底三视图, 白底四视图, 九宫格[剧情]分镜, 九宫格[场景]分镜, 九宫格[导演]分镜, 四宫格[剧情]分镜, 四宫格[视角]分镜, 导演故事板, 黑白素写故事板`（**10 项，顺序实锤**），默认 `无` | — | `使用快捷功能生成。` |
+
+**运行时未暴露**（包装层裁剪，§3.1 中相关推断行据此修正）：`模型选择`/`model_choice` 下拉（GPT Image 2 vs 2.5 的选择不在 Python INPUT_TYPES 中，属前端 JS widget 侧行为）、`quality`、`background`、`output_format`、`verify_ssl`、`filename_prefix`、上游文本 forceInput 输入口。节点 `DESCRIPTION = "使用 gpt-image-2 通过 OpenAI Images API 进行文生图或图生图。"`（带句号，实锤）。
+
+**注册元数据（实锤）**：`FUNCTION = "generate_images"`、`CATEGORY = "TE MAN/OpenAI"`（**注意**：运行时 CATEGORY 为 `TE MAN/OpenAI`，与 pyd 静态串 `TE MAN/GPT` 不同——包装层覆盖了 CATEGORY）、`OUTPUT_NODE = True`、`RETURN_TYPES = ["IMAGE", "STRING"]`、`RETURN_NAMES = ["images", "text"]`。显示名 `TE MAN GPT Image 2 & 2.5`。
+
+### 7.2 模块常量实锤值（动态采集，pyd 模块 `TE_MAN.GPT_Image_2_Generator`）
+
+- `QUICK_FUNCTION_NONE = "无"`；`QUICK_FUNCTION_DIRECTOR_STORYBOARD = "导演故事板"`；`QUICK_FUNCTION_BLACK_WHITE_STORYBOARD = "黑白素写故事板"`
+- `QUICK_FUNCTION_OPTIONS`（10 项精确顺序）：`无, 白底三视图, 白底四视图, 九宫格[剧情]分镜, 九宫格[场景]分镜, 九宫格[导演]分镜, 四宫格[剧情]分镜, 四宫格[视角]分镜, 导演故事板, 黑白素写故事板`
+- `QUICK_FUNCTION_PREFIXES` 关键映射：`九宫格[导演]分镜` → `storyboard sheet, 九宫格,black UI layout, grid panel composition, professional film storyboard,`（§3.5 英文模板归属**实锤**绑定此项）；`导演故事板` → `""`、`黑白素写故事板` → `""`（正文改由 `DIRECTOR_STORYBOARD_PROMPT_PREFIX/SUFFIX` 与 `BLACK_WHITE_STORYBOARD_PROMPT_SUFFIX` 拼接）；其余 7 项与 Grok_Image 模块同文
+- `DIRECTOR_STORYBOARD_PROMPT_PREFIX`（`请生成一张中文专业电影故事板图片，用作 Seedance 2.0 视频生成模型的参考图。…【故事内容】：`）与 `DIRECTOR_STORYBOARD_PROMPT_SUFFIX`（【画面比例】/【画面风格】/【特殊要求】/【生成要求】/版面四区布局/【清晰度限制】全文）完整原文采集成功——§3.5 导演故事板模板全文实锤
+- `BLACK_WHITE_STORYBOARD_PROMPT_SUFFIX` 全文实锤（§3.5 黑白素写故事板）
+- `_MAX_API_ERROR_TEXT_LENGTH = 500`、`_MAX_DISPLAY_ERROR_LENGTH = 600`（错误截断长度定值）
+- `MODULE_DIR` / `PLUGIN_DIR = D:\a\_temp\ComfyUI\custom_nodes\TE_MAN`；基类层 `NODE_CLASS_MAPPINGS["TE_image_pro_gpt_image_2"] = custom_nodes.TE_image.GPT_Image_2_Generator.TEGPTImage2Node`
+- `_MODEL_NAME`、`_MODEL_OPTIONS`、`_SIZE_RATIO_OPTIONS`、`_RESOLUTION_OPTIONS`、`_RESOLUTION_CONFIGS`、`_LEGACY_SIZE_TO_RATIO`、`_IMG2IMG_ENDPOINT_OPTIONS`、`_DEFAULT_OUTPUT_FORMAT`、`_DEFAULT_BACKGROUND` 未被 introspection 采集（推断为非平铺常量/容器），取值仍未知
+
+### 7.3 "未确认"项核对结果
+
+| 原文位置 | 结论 |
+|---|---|
+| §2.4 / §6.7 `OUTPUT_NODE` | **已确认：True（动态回填）** |
+| §2.4 / §6.7 `RETURN_TYPES` / `RETURN_NAMES` 完整成员 | **已确认：`("IMAGE", "STRING")` / `("images", "text")`（动态回填）** |
+| §3.1 比例选项表（11 项，Auto 归属未确认） | **已确认：`size` 下拉共 12 项，`Auto` 为首选项（动态回填）** |
+| §3.1 分辨率标签 / `_RESOLUTION_OPTIONS` | **已确认：标签为 `分辨率(价格不同)`，选项 `1K/2K/4K`，默认 `1K`（动态回填）** |
+| §3.1 `quality` / `background` / `output_format` 选项表与默认值 | **已确认：包装层运行时不暴露这三个参数**（下拉被裁剪；选项表仍无法从 UI 得知）（动态回填） |
+| §3.1 `batch_size` 默认值 | **已确认：默认 1，范围 1~8（动态回填）** |
+| §3.1 `bypass_proxy` / `verify_ssl` / `filename_prefix` 默认值 | **已确认：`绕过代理` 默认 False；`verify_ssl`、`filename_prefix` 运行时未暴露**（动态回填） |
+| §3.5 `QUICK_FUNCTION_OPTIONS` 成员归属与顺序 | **已确认：10 项精确顺序见 §7.2（动态回填）** |
+| §3.5 英文模板片段绑定 | **已确认：绑定 `九宫格[导演]分镜`（动态回填）** |
+| §6.7 `_RESOLUTION_CONFIGS` 各档位尺寸归属 | introspection 未采集该常量，保持未确认 |
+| §6.7 `stream` / `user` 孤立键用途 | introspection 未涉及，保持未确认 |
+| §6.7 `filename_prefix` 用途 | 运行时未暴露该输入，"可能仅前缀参数"的猜测维持，保持未确认 |
+
+另注：运行时 `prompt` 不带 `defaultInput`（§2.4 前端 JS 的「提示词输入接口」为纯前端行为，Python 层未开放 forceInput 口）。

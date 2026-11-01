@@ -40,10 +40,10 @@
 | `DEFAULT_SAVE_PATH_LABEL` | `'默认'` | save_path 的 `default` 项为 `GetModuleGlobal(DEFAULT_SAVE_PATH_LABEL)`（`0x180006AA5`），字符串表 idx 60 有独立 `'默认'`；前端明文 `DEFAULT_SAVE_PATH_LABEL='默认'` | [高] |
 | `CUSTOM_FILENAME_TIME_FORMAT` | `'TE_MAN_%Y-%m-%d-%H-%M-%S'` | filename_prefix 的 `default` 为 `GetModuleGlobal(CUSTOM_FILENAME_TIME_FORMAT)`（`0x18000693E`）；tooltip "支持时间格式，例如 TE_MAN_%Y-%m-%d-%H-%M-%S" | [高] |
 | `INVALID_FILENAME_CHARS_RE` | `'[<>:"/\\|?*\x00-\x1f]+'` | 正则串原样在字符串表（idx 279）；配套 `'_'`/`'_'`/`'+'`/`re`/`sub` 槽位——`_normalize_filename_prefix` 用 `re.sub` 把非法字符替换为 `_` | [高] |
-| `LEGACY_FILENAME_PREFIX_DEFAULTS` | 旧版文件名前缀集合（是否存在 `'ComfyUI'` 一项未确认——`'ComfyUI'` 字符串在表中，前端有 `LEGACY_DEFAULT_SAVE_PATH_VALUES={'','ComfyUI'}` 套式先例，但这是 save_path 侧的旧值） | 名符在字符串表 [高]；值 [中] |
-| `OFFICIAL_UI_IMAGE_TYPES` | `('output','temp','input')` 推断 | 名符在表 [高]；`'temp'/'output'/'input'` 三串同在，前端明文 `OFFICIAL_PREVIEW_IMAGE_TYPES={'output','temp','input'}` | 值 [中] |
-| `IMAGE_TEXT_EXTENSIONS` | 未确认；名符在表，配合 `.png/.jpg/.jpeg/.webp` 与 `_build_png_metadata`/`read_image_metadata` 用途，推断为"可携带文字元数据的图片扩展名"集合 | 名符 [高]；值 [低] |
-| `_NODE_IMAGE_CACHE` / `_SERIALIZED_IMAGES_KEY` / `_TE_PROMPT_METADATA_KEY` | 从 core 导入的别名（见 §3.5） | 名符在表 | [高] |
+| `LEGACY_FILENAME_PREFIX_DEFAULTS` | 旧版文件名前缀集合（是否存在 `'ComfyUI'` 一项未确认——`'ComfyUI'` 字符串在表中，前端有 `LEGACY_DEFAULT_SAVE_PATH_VALUES={'','ComfyUI'}` 套式先例，但这是 save_path 侧的旧值）| 名符在字符串表 [高]；值 [中]。动态回填：运行时模块常量表中无此名 → 非模块级常量 |
+| `OFFICIAL_UI_IMAGE_TYPES` | `('output','temp','input')` 推断 | 名符在表 [高]；`'temp'/'output'/'input'` 三串同在，前端明文 `OFFICIAL_PREVIEW_IMAGE_TYPES={'output','temp','input'}` | 值 [中]。动态回填：运行时模块常量表中无此名 → 非模块级常量 |
+| `IMAGE_TEXT_EXTENSIONS` | 未确认；名符在表，配合 `.png/.jpg/.jpeg/.webp` 与 `_build_png_metadata`/`read_image_metadata` 用途，推断为"可携带文字元数据的图片扩展名"集合 | 名符 [高]；值 [低]。动态回填：运行时模块常量表中无此名 → 非模块级常量 |
+| `_NODE_IMAGE_CACHE` / `_SERIALIZED_IMAGES_KEY` / `_TE_PROMPT_METADATA_KEY` | 从 core 导入的别名（见 §3.5）。已确认：`_NODE_IMAGE_CACHE={}`（运行时初始空 dict）、`_SERIALIZED_IMAGES_KEY='te_saved_preview_images'`、`_TE_PROMPT_METADATA_KEY='te_prompt_text'`（动态回填） | 名符在表 | [高] |
 | `('token','')` 二元组 | PyModule 初始化里 `PyTuple_Pack(2,'token','')` 建于 `0x18001FF58`；推测是 `request.query.get('token','')` 语义相关的常量（如 fallback dict），真实用途未确认 | [低] |
 
 ### 2.4 与 core 的对接（节点 → 支撑库别名导入）
@@ -232,10 +232,84 @@ save_path 控件 label '保存位置'；旧值 {'','ComfyUI'} 迁移显示为 '�
 - `README.md`："首创保存图像节点支持自定义保存路径——填写绝对路径时，可直接保存到计算机内任意指定目录。留空时仍保存到 ComfyUI 默认 output"（§332）；"新增 `保存提示词` 输入口，接入文本后会在保存图片的同时保存同名 `.txt` 提示词文件"（§251）；"TE MAN 加载图像&保存图像 Image 节点新增保存文件名、多图查看和全景图查看能力"（§248）——与 INPUT_TYPES/执行流全部对应。
 
 **未确认项汇总**：
-- `LEGACY_FILENAME_PREFIX_DEFAULTS`、`IMAGE_TEXT_EXTENSIONS` 的具体值；`OFFICIAL_UI_IMAGE_TYPES` 是否恰为三元素（强暗示）。
-- `VALIDATE_INPUTS` 的具体校验逻辑（函数存在，行为未还原）。
+- `LEGACY_FILENAME_PREFIX_DEFAULTS`、`IMAGE_TEXT_EXTENSIONS` 的具体值；`OFFICIAL_UI_IMAGE_TYPES` 是否恰为三元素（强暗示）。→ 动态回填：三者在运行时模块常量表中均不存在，属函数内部/导入别名，非模块级常量。
+- `VALIDATE_INPUTS` 的具体校验逻辑（函数存在，行为未还原）→ 动态回填：实机 INPUT_TYPES 正常返回，校验逻辑仍未还原。
 - `('token','')` 二元组（@0x18001FF58）的实际用途。
 - `save_images_and_output` 结果对象里 `saved_paths`/`success`/`status`/`result` 的具体结构与 ui 键之外的 result 通道。
 - 旧参数名兼容链「保存提示词」→`save_prompt_text`→`text`/`te_prompt` 的确切优先级顺序。
 - `_make_unique_png_filename` 编号格式（`'05'` 推断为 5 位补零）与 `_build_png_metadata` 的完整键集合。
 - 反汇编只覆盖模块级结构（类属性/INPUT_TYPES/路由/导入），方法体内的具体分支（如三级回退的精确顺序）依据消息与调用链推断。
+
+## 动态 introspection 回填（Windows+ComfyUI 真机实测）
+
+> 数据来源：GitHub Actions `Windows-2025Server` + Python 3.13.16 + ComfyUI（`D:\a\_temp\ComfyUI`）真实加载本 pyd 后运行时 introspection（`INPUT_TYPES()` 实际返回值与模块 `__dict__` 常量导出）。以下值均为运行时直接读出，非静态推断。
+
+### (a) INPUT_TYPES 实测全表
+
+`INPUT_TYPES()` 运行时返回（`ok=True`），与 §3.1 静态反汇编还原**逐字段一致**，静态还原全部得到证实：
+
+```python
+{
+  "required": {
+    "upload_image": ([运行时选项列表: ComfyUI input 目录现有图像, 空白项""在前],
+                     {"default": "", "image_upload": True,
+                      "tooltip": "可选。左侧 images 未连接时，使用这里选择或上传的图像；左侧 images 一旦有输入，会优先覆盖这里的选择。要清空选择，请手动选回空白项。"}),
+    "filename_prefix": ("STRING",
+                     {"default": "TE_MAN_%Y-%m-%d-%H-%M-%S",          # ← CUSTOM_FILENAME_TIME_FORMAT 实锤
+                      "display_name": "文件名前缀", "label": "文件名前缀",
+                      "tooltip": "保存文件名/前缀。支持时间格式，例如 TE_MAN_%Y-%m-%d-%H-%M-%S。多张图会自动追加编号；需要接文本时请使用左侧「保存文件名」。"}),
+    "save_path":      ("STRING",
+                     {"default": "默认",                               # ← DEFAULT_SAVE_PATH_LABEL 实锤
+                      "display_name": "保存位置", "label": "保存位置",
+                      "tooltip": "保存位置。默认或留空时保存到 ComfyUI 默认 output；填写时必须是绝对目录，例如 F:\\test\\images。"})},
+  "optional": {
+    "images":  ("IMAGE", {"tooltip": "要保存并继续输出的图像。留空时会尝试使用本节点上一次保存过的图像。"}),
+    "保存文件名": ("STRING", {"forceInput": True,
+                      "tooltip": "可选。接入文本后会覆盖上方文件名前缀输入框，作为实际保存文件名。"}),
+    "保存提示词": ("STRING", {"forceInput": True,
+                      "tooltip": "可选。接入文本后，会用与图片相同的文件名在同目录保存 .txt。"})},
+  "hidden": {"unique_id": "UNIQUE_ID", "prompt": "PROMPT", "extra_pnginfo": "EXTRA_PNGINFO"}
+}
+```
+
+实测要点（含 UI 标志）：
+- `upload_image`：COMBO 型，选项第 0 位为空白项 `""`（后接 input 目录文件清单，实测含 `"example.png"` 样例项）；选项字典带 `image_upload: True`（LoadImage 式"选择或上传"控件）。
+- `filename_prefix`：STRING widget，`default='TE_MAN_%Y-%m-%d-%H-%M-%S'`；同时携带 `display_name` + `label`（TE MAN 前端横排控件标志）。
+- `save_path`：STRING widget，`default='默认'`；同样带 `display_name` + `label`。
+- `images`：optional IMAGE 插槽，无 forceInput（普通右侧输入口）。
+- `保存文件名` / `保存提示词`：中文标识符参数名，`forceInput: True`（节点左侧文本输入口），实测证实。
+- hidden 三件套：`unique_id: UNIQUE_ID`、`prompt: PROMPT`、`extra_pnginfo: EXTRA_PNGINFO`，实测证实。
+- 无 min/max/step 数值参数；除上述 tooltip 外无其他 UI 标志。
+
+### (b) 节点元数据实测
+
+| 项 | 实测值 |
+|---|---|
+| 注册键 | `TE_image_pro_save_image_with_output`（与静态分析一致） |
+| 显示名 | `TE MAN 加载图像&保存图像 Image` |
+| 类名 | `TESaveImageWithOutput`，模块 `custom_nodes.TE_image.Save_Image_With_Output` |
+| `FUNCTION` | `save_images_and_output` |
+| `CATEGORY` | `TE MAN/Utils` |
+| `OUTPUT_NODE` | `True`（实测布尔值） |
+| `RETURN_TYPES` | `("IMAGE",)` **已确认**（动态回填，与 §2.1 静态还原一致） |
+| `RETURN_NAMES` | `("images",)` **已确认**（动态回填） |
+
+### (c) 模块常量实锤（运行时 `__dict__` 导出）
+
+| 常量 | 实测值 |
+|---|---|
+| `CUSTOM_FILENAME_TIME_FORMAT` | `"TE_MAN_%Y-%m-%d-%H-%M-%S"` **已确认** |
+| `DEFAULT_SAVE_PATH_LABEL` | `"默认"` **已确认** |
+| `_NODE_IMAGE_CACHE` | `{}`（运行时初始为空 dict，core 导入别名） |
+| `_SERIALIZED_IMAGES_KEY` | `"te_saved_preview_images"` **已确认**（与前端 `SERIALIZED_IMAGES_KEY` 完全一致） |
+| `_TE_PROMPT_METADATA_KEY` | `"te_prompt_text"` **已确认**（与前端回传键 `te_prompt_text` 一致） |
+| `NODE_CLASS_MAPPINGS` / `NODE_DISPLAY_NAME_MAPPINGS` | 如上注册表 |
+| `LEGACY_FILENAME_PREFIX_DEFAULTS` / `OFFICIAL_UI_IMAGE_TYPES` / `IMAGE_TEXT_EXTENSIONS` | **运行时模块级常量中不存在** → 更正原"名符在表"的判断：它们不是模块级常量（或仅为函数内部局部名/Cython 字符串槽位），其值仍无法从模块 `__dict__` 获得 |
+
+### (d) 对正文"未确认"项的核对结论
+
+- §2.1 类属性全部**证实**：`RETURN_TYPES=('IMAGE',)`、`RETURN_NAMES=('images',)`、`FUNCTION='save_images_and_output'`、`OUTPUT_NODE=True`、`CATEGORY='TE MAN/Utils'` —— 动态回填零偏差。
+- §3.1 INPUT_TYPES 静态还原**逐字段证实**（三个 widget 默认值、两个中文 forceInput 输入口、hidden 三件套均一致）。
+- `DEFAULT_SAVE_PATH_LABEL='默认'`、`CUSTOM_FILENAME_TIME_FORMAT='TE_MAN_%Y-%m-%d-%H-%M-%S'` **已确认**（动态回填）——正文 §2.3 相应两行的推断已定论。
+- `IMAGE_TEXT_EXTENSIONS`、`LEGACY_FILENAME_PREFIX_DEFAULTS`、`OFFICIAL_UI_IMAGE_TYPES`：模块 `__dict__` 中无 → 判定为非模块级常量（修正静态推断的归类），具体值仍未确认。
+- `VALIDATE_INPUTS` 逻辑、`('token','')` 用途、`saved_paths` 结果结构、`_make_unique_png_filename` 编号格式：仍为未确认（introspection 不含方法体）。

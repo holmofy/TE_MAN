@@ -1,0 +1,1598 @@
+{
+  "env": {
+    "python": "3.13.16 (tags/v3.13.16:cbc944f, Sep 30 2026, 19:17:50) [MSC v.1944 64 bit (AMD64)]",
+    "platform": "Windows-2025Server-10.0.26100-SP0",
+    "comfyui_dir": "D:\\a\\_temp\\ComfyUI"
+  },
+  "package": "D:\\a\\_temp\\ComfyUI\\custom_nodes\\TE_MAN\\__init__.py",
+  "node_class_mappings": {
+    "TE_image_pro_save_video": "<class 'custom_nodes.TE_image.Save_Video_With_Frame_Capture.TESaveVideoWithFrameCapture'>",
+    "TE_3D_Director": "<class 'custom_nodes.TE_image.TE_3D_Director.TEMan3DDirectorNode'>",
+    "TE_MAN_Batch_Prompt": "<class 'custom_nodes.TE_image.TE_Batch_Tools.TEMANBatchPromptNode'>",
+    "TE_MAN_Batch_Image": "<class 'custom_nodes.TE_image.TE_Batch_Tools.TEMANBatchImageNode'>",
+    "TE_MAN_Batch_Enhanced_Settings": "<class 'custom_nodes.TE_image.TE_Batch_Tools.TEMANBatchEnhancedSettingsNode'>",
+    "TE_Bernini_R_Generator": "<class 'custom_nodes.TE_image.TE_Bernini_R_Generator.TEBerniniRGenerator'>",
+    "TE_Bernini_Prompt_Enhancer": "<class 'custom_nodes.TE_image.TE_Bernini_R_Generator.TEBerniniPromptEnhancer'>",
+    "TE_image_pro_text_tools": "<class 'custom_nodes.TE_image.TE_MAN_Text_Tools.TEMANTextToolsNode'>",
+    "TE_text_display": "<class 'custom_nodes.TE_image.TE_Text_Display.TETextDisplayNode'>",
+    "TE_image_pro_video_comparer": "<class 'custom_nodes.TE_image.TE_Video_Comparer.TEMANVideoComparerNode'>"
+  },
+  "node_display_name_mappings": {
+    "TE_image_pro_save_video": "TE MAN 保存视频video",
+    "TE_3D_Director": "TE MAN 3D导演台",
+    "TE_MAN_Batch_Prompt": "TE MAN 批量提示词",
+    "TE_MAN_Batch_Image": "TE MAN 批量图片",
+    "TE_MAN_Batch_Enhanced_Settings": "TE MAN 批量增强设置",
+    "TE_Bernini_R_Generator": "TE MAN Bernini",
+    "TE_Bernini_Prompt_Enhancer": "TE MAN Bernini 提示词增强(本地orAPI)",
+    "TE_image_pro_text_tools": "TE MAN Text文本处理",
+    "TE_text_display": "TE MAN TEXT文本展示",
+    "TE_image_pro_video_comparer": "TE MAN 视频对比"
+  },
+  "web_directory": "./web",
+  "nodes": {
+    "TE_image_pro_save_video": {
+      "class": "TESaveVideoWithFrameCapture",
+      "module": "custom_nodes.TE_image.Save_Video_With_Frame_Capture",
+      "doc": null,
+      "FUNCTION": "save_video_and_output",
+      "CATEGORY": "TE MAN/Utils",
+      "OUTPUT_NODE": true,
+      "RETURN_TYPES": [
+        "VIDEO"
+      ],
+      "RETURN_NAMES": [
+        "video"
+      ],
+      "DESCRIPTION": "保存输入视频到 ComfyUI 输出目录，并在节点前端提供暂停预览与截取当前帧功能。",
+      "SEARCH_ALIASES": [
+        "save video",
+        "video output",
+        "export video",
+        "save video with preview"
+      ],
+      "has_IS_CHANGED": true,
+      "has_VALIDATE_INPUTS": true,
+      "has_on_execute": false,
+      "has_check_lazy_status": false,
+      "INPUT_TYPES": {
+        "ok": true,
+        "value": {
+          "required": {
+            "local_video": [
+              [
+                ""
+              ],
+              {
+                "default": "",
+                "tooltip": "可选。左侧 video 未连接时，使用这里选择 input 目录中的本地视频。"
+              }
+            ],
+            "filename_prefix": [
+              "STRING",
+              {
+                "default": "TE_MAN_Video",
+                "tooltip": "保存到 output 目录时使用的文件名前缀。"
+              }
+            ]
+          },
+          "optional": {
+            "video": [
+              "VIDEO",
+              {
+                "tooltip": "要保存的视频输入。接入后会优先使用这里的视频，并覆盖本地视频选择。"
+              }
+            ]
+          },
+          "hidden": {
+            "unique_id": "UNIQUE_ID",
+            "prompt": "PROMPT",
+            "extra_pnginfo": "EXTRA_PNGINFO"
+          }
+        }
+      }
+    },
+    "TE_3D_Director": {
+      "class": "TEMan3DDirectorNode",
+      "module": "custom_nodes.TE_image.TE_3D_Director",
+      "doc": null,
+      "FUNCTION": "export_scene",
+      "CATEGORY": "TE MAN/3D",
+      "OUTPUT_NODE": true,
+      "RETURN_TYPES": [
+        "STRING",
+        "STRING"
+      ],
+      "RETURN_NAMES": [
+        "scene_json",
+        "示例提示词"
+      ],
+      "DESCRIPTION": "打开 TE MAN 3D导演台，编辑角色、道具、机位和姿势，并输出场景 JSON 与构图提示词。",
+      "has_IS_CHANGED": false,
+      "has_VALIDATE_INPUTS": false,
+      "has_on_execute": false,
+      "has_check_lazy_status": false,
+      "INPUT_TYPES": {
+        "ok": true,
+        "value": {
+          "required": {
+            "scene_json": [
+              "STRING",
+              {
+                "multiline": true,
+                "default": "{}",
+                "tooltip": "3D导演台保存的场景 JSON。通常由前端面板自动写入。"
+              }
+            ],
+            "composition_prompt": [
+              "STRING",
+              {
+                "multiline": true,
+                "default": "让镜头角度和人物在场景中的站位关系按照 图1 中的设定, 把蓝色人偶替换为 图2 人物,把粉色人偶替换为 图3 人物,双方在城市街道见面",
+                "display_name": "示例提示词",
+                "label": "示例提示词",
+                "tooltip": "示例提示词，可根据导演台截图和参考图自行补充修改。"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "TE_MAN_Batch_Prompt": {
+      "class": "TEMANBatchPromptNode",
+      "module": "custom_nodes.TE_image.TE_Batch_Tools",
+      "doc": null,
+      "FUNCTION": "get_prompt",
+      "CATEGORY": "TE MAN/Batch",
+      "RETURN_TYPES": [
+        "STRING",
+        "STRING"
+      ],
+      "RETURN_NAMES": [
+        "输出提示词",
+        "编号"
+      ],
+      "DESCRIPTION": "TE MAN 批量提示词：卡片式管理多条提示词，可单项执行或批量执行。",
+      "has_IS_CHANGED": true,
+      "has_VALIDATE_INPUTS": true,
+      "has_on_execute": false,
+      "has_check_lazy_status": false,
+      "INPUT_TYPES": {
+        "ok": true,
+        "value": {
+          "required": {
+            "prompts_json": [
+              "STRING",
+              {
+                "default": "[]",
+                "hidden": true
+              }
+            ],
+            "index": [
+              "INT",
+              {
+                "default": 0,
+                "min": 0,
+                "max": 100000,
+                "step": 1
+              }
+            ],
+            "最大任务数": [
+              "INT",
+              {
+                "default": 100,
+                "min": 1,
+                "max": 10000,
+                "step": 1,
+                "tooltip": "批量执行时前端用于防止误提交过多任务。"
+              }
+            ]
+          },
+          "optional": {
+            "增强设置": [
+              "TE_BATCH_ENHANCED_SETTINGS",
+              {
+                "forceInput": true,
+                "tooltip": "可连接 TE MAN 批量增强设置，控制执行范围、间隔、续跑编号和随机顺序。"
+              }
+            ],
+            "prompts": [
+              "STRING",
+              {
+                "forceInput": true,
+                "tooltip": "可选上游文本。支持一行一条、编号列表或 JSON 数组。"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "TE_MAN_Batch_Image": {
+      "class": "TEMANBatchImageNode",
+      "module": "custom_nodes.TE_image.TE_Batch_Tools",
+      "doc": null,
+      "FUNCTION": "load_image",
+      "CATEGORY": "TE MAN/Batch",
+      "RETURN_TYPES": [
+        "IMAGE",
+        "STRING",
+        "STRING"
+      ],
+      "RETURN_NAMES": [
+        "输出图片",
+        "图片文件名",
+        "编号"
+      ],
+      "DESCRIPTION": "TE MAN 批量图片：多图列表管理，可单项执行或批量执行。",
+      "has_IS_CHANGED": true,
+      "has_VALIDATE_INPUTS": true,
+      "has_on_execute": false,
+      "has_check_lazy_status": false,
+      "INPUT_TYPES": {
+        "ok": true,
+        "value": {
+          "required": {
+            "image_list": [
+              "STRING",
+              {
+                "multiline": true,
+                "default": "",
+                "hidden": true
+              }
+            ],
+            "index": [
+              "INT",
+              {
+                "default": 0,
+                "min": 0,
+                "max": 100000,
+                "step": 1
+              }
+            ],
+            "max_images": [
+              "INT",
+              {
+                "default": 0,
+                "min": 0,
+                "max": 100000,
+                "step": 1,
+                "tooltip": "0 表示不限制。"
+              }
+            ],
+            "最大任务数": [
+              "INT",
+              {
+                "default": 100,
+                "min": 1,
+                "max": 10000,
+                "step": 1,
+                "tooltip": "批量执行时前端用于防止误提交过多任务。"
+              }
+            ]
+          },
+          "optional": {
+            "增强设置": [
+              "TE_BATCH_ENHANCED_SETTINGS",
+              {
+                "forceInput": true,
+                "tooltip": "可连接 TE MAN 批量增强设置，控制执行范围、间隔、续跑编号和随机顺序。"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "TE_MAN_Batch_Enhanced_Settings": {
+      "class": "TEMANBatchEnhancedSettingsNode",
+      "module": "custom_nodes.TE_image.TE_Batch_Tools",
+      "doc": null,
+      "FUNCTION": "build_settings",
+      "CATEGORY": "TE MAN/Batch",
+      "RETURN_TYPES": [
+        "TE_BATCH_ENHANCED_SETTINGS"
+      ],
+      "RETURN_NAMES": [
+        "增强设置"
+      ],
+      "DESCRIPTION": "TE MAN 批量增强设置：连接到批量提示词/批量图片节点，控制批量执行范围、间隔、续跑编号和随机顺序。",
+      "has_IS_CHANGED": false,
+      "has_VALIDATE_INPUTS": false,
+      "has_on_execute": false,
+      "has_check_lazy_status": false,
+      "INPUT_TYPES": {
+        "ok": true,
+        "value": {
+          "required": {
+            "执行间隔时间": [
+              "FLOAT",
+              {
+                "default": 0.0,
+                "min": 0.0,
+                "max": 86400.0,
+                "step": 0.1,
+                "tooltip": "每提交 1 个任务后等待的秒数。0 表示立即提交下一个。"
+              }
+            ],
+            "从指定编号继续": [
+              "INT",
+              {
+                "default": 1,
+                "min": 1,
+                "max": 100000,
+                "step": 1,
+                "tooltip": "从第几个编号开始批量执行。1 表示从第一项开始。"
+              }
+            ],
+            "随机编号执行": [
+              "BOOLEAN",
+              {
+                "default": false,
+                "tooltip": "开启后，在当前范围内随机顺序提交。"
+              }
+            ],
+            "执行范围": [
+              [
+                "只执行当前线",
+                "执行整个工作流"
+              ],
+              {
+                "default": "只执行当前线",
+                "tooltip": "默认只执行当前批量节点连接出去的流程；需要全工作流时改为执行整个工作流。"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "TE_Bernini_R_Generator": {
+      "class": "TEBerniniRGenerator",
+      "module": "custom_nodes.TE_image.TE_Bernini_R_Generator",
+      "doc": null,
+      "FUNCTION": "generate",
+      "CATEGORY": "TE MAN/Bernini",
+      "RETURN_TYPES": [
+        "IMAGE",
+        "STRING"
+      ],
+      "RETURN_NAMES": [
+        "图像",
+        "状态"
+      ],
+      "has_IS_CHANGED": false,
+      "has_VALIDATE_INPUTS": false,
+      "has_on_execute": false,
+      "has_check_lazy_status": false,
+      "INPUT_TYPES": {
+        "ok": true,
+        "value": {
+          "required": {
+            "高噪模型": [
+              [],
+              {
+                "default": "Wan22_Bernini_HIGH_fp8_e4m3fn_scaled.safetensors"
+              }
+            ],
+            "低噪模型": [
+              [],
+              {
+                "default": "Wan22_Bernini_LOW_fp8_e4m3fn_scaled.safetensors"
+              }
+            ],
+            "VAE模型": [
+              [],
+              {
+                "default": "Wan2_1_VAE_bf16.safetensors"
+              }
+            ],
+            "文本编码器": [
+              [],
+              {
+                "default": "umt5-xxl-enc-fp8_e4m3fn.safetensors"
+              }
+            ],
+            "启用加速LoRA": [
+              "BOOLEAN",
+              {
+                "default": true
+              }
+            ],
+            "高噪加速LoRA": [
+              [
+                "无"
+              ],
+              {
+                "default": "无"
+              }
+            ],
+            "高噪LoRA强度": [
+              "FLOAT",
+              {
+                "default": 1.0,
+                "min": -10.0,
+                "max": 10.0,
+                "step": 0.0001
+              }
+            ],
+            "低噪加速LoRA": [
+              [
+                "无"
+              ],
+              {
+                "default": "无"
+              }
+            ],
+            "低噪LoRA强度": [
+              "FLOAT",
+              {
+                "default": 1.0,
+                "min": -10.0,
+                "max": 10.0,
+                "step": 0.0001
+              }
+            ],
+            "提示词": [
+              "STRING",
+              {
+                "default": "",
+                "multiline": true
+              }
+            ],
+            "负面提示词": [
+              "STRING",
+              {
+                "default": "bad video",
+                "multiline": true
+              }
+            ],
+            "宽度": [
+              "INT",
+              {
+                "default": 832,
+                "min": 16,
+                "max": 8192,
+                "step": 16
+              }
+            ],
+            "高度": [
+              "INT",
+              {
+                "default": 480,
+                "min": 16,
+                "max": 8192,
+                "step": 16
+              }
+            ],
+            "帧数": [
+              "INT",
+              {
+                "default": 81,
+                "min": 1,
+                "max": 8192,
+                "step": 4
+              }
+            ],
+            "种子": [
+              "INT",
+              {
+                "default": 666,
+                "min": 0,
+                "max": 18446744073709551615
+              }
+            ],
+            "步数": [
+              "INT",
+              {
+                "default": 8,
+                "min": 1,
+                "max": 1000
+              }
+            ],
+            "Shift": [
+              "FLOAT",
+              {
+                "default": 5.0,
+                "min": 0.0,
+                "max": 1000.0,
+                "step": 0.01
+              }
+            ],
+            "高噪CFG": [
+              "FLOAT",
+              {
+                "default": 1.0,
+                "min": 0.0,
+                "max": 30.0,
+                "step": 0.01
+              }
+            ],
+            "低噪CFG": [
+              "FLOAT",
+              {
+                "default": 1.0,
+                "min": 0.0,
+                "max": 30.0,
+                "step": 0.01
+              }
+            ],
+            "高噪结束步": [
+              "INT",
+              {
+                "default": 4,
+                "min": 1,
+                "max": 1000
+              }
+            ],
+            "低噪开始步": [
+              "INT",
+              {
+                "default": 4,
+                "min": 0,
+                "max": 1000
+              }
+            ],
+            "采样器": [
+              [
+                "euler",
+                "unipc",
+                "dpm++",
+                "dpm++_sde",
+                "ddim",
+                "flowmatch_causvid"
+              ],
+              {
+                "default": "euler"
+              }
+            ]
+          },
+          "optional": {
+            "源视频或源图": [
+              "IMAGE"
+            ],
+            "参考视频": [
+              "IMAGE"
+            ],
+            "参考图1": [
+              "IMAGE"
+            ],
+            "参考图2": [
+              "IMAGE"
+            ],
+            "参考图3": [
+              "IMAGE"
+            ],
+            "参考图4": [
+              "IMAGE"
+            ],
+            "参考图5": [
+              "IMAGE"
+            ],
+            "参考图6": [
+              "IMAGE"
+            ],
+            "参考图7": [
+              "IMAGE"
+            ],
+            "参考图8": [
+              "IMAGE"
+            ],
+            "参考图最大边": [
+              "INT",
+              {
+                "default": 832,
+                "min": 16,
+                "max": 8192,
+                "step": 16
+              }
+            ],
+            "模型精度": [
+              [
+                "bf16",
+                "fp16",
+                "fp32",
+                "fp16_fast"
+              ],
+              {
+                "default": "bf16"
+              }
+            ],
+            "模型量化": [
+              [
+                "disabled",
+                "fp8_e4m3fn",
+                "fp8_e4m3fn_scaled",
+                "fp8_e4m3fn_fast",
+                "fp8_e4m3fn_scaled_fast",
+                "fp8_e5m2",
+                "fp8_e5m2_scaled",
+                "fp8_e5m2_fast",
+                "fp8_e5m2_scaled_fast"
+              ],
+              {
+                "default": "disabled"
+              }
+            ],
+            "注意力模式": [
+              [
+                "sageattn",
+                "sdpa",
+                "flash_attn_2",
+                "flash_attn_3",
+                "sageattn_3",
+                "radial_sage_attention",
+                "sageattn_compiled"
+              ],
+              {
+                "default": "sageattn"
+              }
+            ],
+            "VAE精度": [
+              [
+                "bf16",
+                "fp16",
+                "fp32"
+              ],
+              {
+                "default": "bf16"
+              }
+            ],
+            "文本精度": [
+              [
+                "bf16",
+                "fp32"
+              ],
+              {
+                "default": "bf16"
+              }
+            ],
+            "文本量化": [
+              [
+                "disabled",
+                "fp8_e4m3fn"
+              ],
+              {
+                "default": "fp8_e4m3fn"
+              }
+            ],
+            "文本编码设备": [
+              [
+                "gpu",
+                "cpu"
+              ],
+              {
+                "default": "gpu"
+              }
+            ],
+            "强制卸载": [
+              "BOOLEAN",
+              {
+                "default": true
+              }
+            ],
+            "BlockSwap块数": [
+              "INT",
+              {
+                "default": 30,
+                "min": 0,
+                "max": 40,
+                "step": 1
+              }
+            ]
+          }
+        }
+      }
+    },
+    "TE_Bernini_Prompt_Enhancer": {
+      "class": "TEBerniniPromptEnhancer",
+      "module": "custom_nodes.TE_image.TE_Bernini_R_Generator",
+      "doc": null,
+      "FUNCTION": "enhance_prompt",
+      "CATEGORY": "TE MAN/Bernini",
+      "OUTPUT_NODE": true,
+      "RETURN_TYPES": [
+        "STRING",
+        "STRING"
+      ],
+      "RETURN_NAMES": [
+        "增强提示词(API)",
+        "提示词模版(本地)"
+      ],
+      "has_IS_CHANGED": true,
+      "has_VALIDATE_INPUTS": false,
+      "has_on_execute": false,
+      "has_check_lazy_status": false,
+      "INPUT_TYPES": {
+        "ok": true,
+        "value": {
+          "required": {
+            "输入提示词": [
+              "STRING",
+              {
+                "default": "",
+                "multiline": true,
+                "tooltip": "输入原始提示词或简短需求"
+              }
+            ],
+            "任务类型": [
+              [
+                "文生视频(t2v)",
+                "视频改视频(v2v)",
+                "大幅度动作改视频(mv2v)",
+                "动作迁移/参考改视频(rv2v)",
+                "图生视频(r2v)"
+              ],
+              {
+                "default": "文生视频(t2v)",
+                "tooltip": "按 Bernini 的视频任务分类选择模板"
+              }
+            ],
+            "增强方式": [
+              [
+                "本地模板",
+                "API增强"
+              ],
+              {
+                "default": "本地模板",
+                "tooltip": "本地模板不依赖接口；API增强会调用 Responses API"
+              }
+            ],
+            "参考图数量": [
+              "INT",
+              {
+                "default": 1,
+                "min": 1,
+                "max": 8,
+                "step": 1,
+                "tooltip": "仅用于 r2v/rv2v 官方增强模板里的 image_num 描述"
+              }
+            ],
+            "api_key": [
+              "STRING",
+              {
+                "default": "",
+                "multiline": false,
+                "tooltip": "API Key；留空则读取 config.ini"
+              }
+            ],
+            "api_base_url": [
+              "STRING",
+              {
+                "default": "https://tem.588186.xyz",
+                "multiline": false,
+                "tooltip": "服务地址，如 https://api.xxx.com；可填到 /v1 或 /v1/responses"
+              }
+            ],
+            "model": [
+              "STRING",
+              {
+                "default": "gpt-5.5",
+                "multiline": false,
+                "tooltip": "Responses API 模型名称，按你的中转/服务端支持填写"
+              }
+            ],
+            "max_output_tokens": [
+              "INT",
+              {
+                "default": 2048,
+                "min": 256,
+                "max": 32768,
+                "step": 256,
+                "tooltip": "最大输出 token，API 增强时使用"
+              }
+            ],
+            "temperature": [
+              "FLOAT",
+              {
+                "default": 0.7,
+                "min": 0.0,
+                "max": 2.0,
+                "step": 0.05,
+                "tooltip": "创意程度；如果服务端模型不支持，可调回默认或更低"
+              }
+            ]
+          },
+          "optional": {
+            "timeout_s": [
+              "INT",
+              {
+                "default": 300,
+                "min": 30,
+                "max": 1800,
+                "tooltip": "请求超时时间（秒）"
+              }
+            ],
+            "绕过代理": [
+              "BOOLEAN",
+              {
+                "default": false,
+                "tooltip": "需要忽略系统代理/梯子时开启"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "TE_image_pro_text_tools": {
+      "class": "TEMANTextToolsNode",
+      "module": "custom_nodes.TE_image.TE_MAN_Text_Tools",
+      "doc": null,
+      "FUNCTION": "process_text",
+      "CATEGORY": "TE MAN/Text",
+      "OUTPUT_NODE": true,
+      "RETURN_TYPES": [
+        "STRING",
+        "STRING"
+      ],
+      "RETURN_NAMES": [
+        "text",
+        "json"
+      ],
+      "has_IS_CHANGED": true,
+      "has_VALIDATE_INPUTS": false,
+      "has_on_execute": false,
+      "has_check_lazy_status": false,
+      "INPUT_TYPES": {
+        "ok": true,
+        "value": {
+          "required": {
+            "输入文本": [
+              "STRING",
+              {
+                "multiline": true,
+                "default": "一个穿红色旗袍的女性站在雨夜霓虹街道，手持折扇，电影感光影",
+                "tooltip": "输入剧情、简短提示词或需要处理的文本"
+              }
+            ],
+            "快捷功能": [
+              [
+                "9段分镜提示词",
+                "扩写生图提示词",
+                "扩写生视频提示词",
+                "自定义"
+              ],
+              {
+                "default": "9段分镜提示词",
+                "tooltip": "选择要执行的一次性文本处理功能"
+              }
+            ],
+            "api_key": [
+              "STRING",
+              {
+                "default": "",
+                "multiline": false,
+                "tooltip": "API Key；留空则读取 config.ini"
+              }
+            ],
+            "api_base_url": [
+              "STRING",
+              {
+                "default": "",
+                "multiline": false,
+                "tooltip": "服务地址，如 https://api.xxx.com；可填到 /v1 或 /v1/responses"
+              }
+            ],
+            "model": [
+              "STRING",
+              {
+                "default": "gpt-5.5",
+                "multiline": false,
+                "tooltip": "Responses API 模型名称，按你的中转/服务端支持填写"
+              }
+            ],
+            "画面比例": [
+              [
+                "16:9",
+                "9:16",
+                "1:1",
+                "4:3",
+                "3:4",
+                "4:5",
+                "5:4",
+                "21:9",
+                "9:21"
+              ],
+              {
+                "default": "16:9",
+                "tooltip": "主要用于 9段分镜 的 grid_aspect_ratio 和提示词方向"
+              }
+            ],
+            "输出语言": [
+              [
+                "中文",
+                "English"
+              ],
+              {
+                "default": "中文",
+                "tooltip": "控制非 9 段分镜功能的输出语言；9 段分镜固定中文"
+              }
+            ],
+            "max_output_tokens": [
+              "INT",
+              {
+                "default": 4096,
+                "min": 256,
+                "max": 32768,
+                "step": 256,
+                "tooltip": "最大输出 token，9段分镜建议 4096 或更高"
+              }
+            ],
+            "temperature": [
+              "FLOAT",
+              {
+                "default": 0.7,
+                "min": 0.0,
+                "max": 2.0,
+                "step": 0.05,
+                "tooltip": "创意程度；如果服务端模型不支持，可调回默认或更低"
+              }
+            ]
+          },
+          "optional": {
+            "seed": [
+              "INT",
+              {
+                "default": -1,
+                "min": -1,
+                "max": 2147483647,
+                "control_after_generate": true,
+                "tooltip": "仅用于 ComfyUI 触发重新执行，不会写入请求体"
+              }
+            ],
+            "timeout_s": [
+              "INT",
+              {
+                "default": 300,
+                "min": 30,
+                "max": 1800,
+                "tooltip": "请求超时时间（秒）"
+              }
+            ],
+            "绕过代理": [
+              "BOOLEAN",
+              {
+                "default": false,
+                "tooltip": "需要忽略系统代理/梯子时开启"
+              }
+            ],
+            "快捷功能自定义": [
+              "STRING",
+              {
+                "forceInput": true,
+                "tooltip": "快捷功能选择“自定义”时生效；输入内容会添加到用户提示词前面"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "TE_text_display": {
+      "class": "TETextDisplayNode",
+      "module": "custom_nodes.TE_image.TE_Text_Display",
+      "doc": null,
+      "FUNCTION": "show_text",
+      "CATEGORY": "TE MAN/Utils",
+      "OUTPUT_NODE": true,
+      "RETURN_TYPES": [
+        "STRING"
+      ],
+      "RETURN_NAMES": [
+        "text"
+      ],
+      "DESCRIPTION": "显示、编辑并继续输出文本。可连接上游文本，也可直接在节点内输入。",
+      "has_IS_CHANGED": true,
+      "has_VALIDATE_INPUTS": false,
+      "has_on_execute": false,
+      "has_check_lazy_status": false,
+      "INPUT_TYPES": {
+        "ok": true,
+        "value": {
+          "required": {
+            "text": [
+              "STRING",
+              {
+                "multiline": true,
+                "default": "",
+                "tooltip": "节点内文本。未连接 input_text 时会作为输出文本。"
+              }
+            ]
+          },
+          "optional": {
+            "input_text": [
+              "STRING",
+              {
+                "forceInput": true,
+                "tooltip": "可选上游文本。连接后优先显示并输出这里的内容。"
+              }
+            ],
+            "use_edited_text": [
+              "BOOLEAN",
+              {
+                "default": false
+              }
+            ],
+            "edited_from_text": [
+              "STRING",
+              {
+                "default": ""
+              }
+            ]
+          },
+          "hidden": {
+            "unique_id": "UNIQUE_ID",
+            "extra_pnginfo": "EXTRA_PNGINFO"
+          }
+        }
+      }
+    },
+    "TE_image_pro_video_comparer": {
+      "class": "TEMANVideoComparerNode",
+      "module": "custom_nodes.TE_image.TE_Video_Comparer",
+      "doc": null,
+      "FUNCTION": "compare_videos",
+      "CATEGORY": "TE MAN/Utils",
+      "OUTPUT_NODE": true,
+      "RETURN_TYPES": [],
+      "RETURN_NAMES": [],
+      "DESCRIPTION": "在节点内叠加播放两个视频，鼠标移动分界线进行对比。",
+      "has_IS_CHANGED": false,
+      "has_VALIDATE_INPUTS": false,
+      "has_on_execute": false,
+      "has_check_lazy_status": false,
+      "INPUT_TYPES": {
+        "ok": true,
+        "value": {
+          "required": {},
+          "optional": {
+            "video_a": [
+              "VIDEO",
+              {
+                "tooltip": "对比视频 A（可选）"
+              }
+            ],
+            "video_b": [
+              "VIDEO",
+              {
+                "tooltip": "对比视频 B（可选）"
+              }
+            ]
+          },
+          "hidden": {
+            "prompt": "PROMPT",
+            "extra_pnginfo": "EXTRA_PNGINFO"
+          }
+        }
+      }
+    }
+  },
+  "modules": {
+    "TE_MAN": {
+      "module": "TE_MAN",
+      "file": "D:\\a\\_temp\\ComfyUI\\custom_nodes\\TE_MAN\\__init__.py",
+      "doc": "通用ComfyUI自定义节点加载器\n支持任何文件夹名称，自动检测并加载节点",
+      "constants": {
+        "NODE_CLASS_MAPPINGS": {
+          "TE_image_pro_save_video": "<class 'custom_nodes.TE_image.Save_Video_With_Frame_Capture.TESaveVideoWithFrameCapture'>",
+          "TE_3D_Director": "<class 'custom_nodes.TE_image.TE_3D_Director.TEMan3DDirectorNode'>",
+          "TE_MAN_Batch_Prompt": "<class 'custom_nodes.TE_image.TE_Batch_Tools.TEMANBatchPromptNode'>",
+          "TE_MAN_Batch_Image": "<class 'custom_nodes.TE_image.TE_Batch_Tools.TEMANBatchImageNode'>",
+          "TE_MAN_Batch_Enhanced_Settings": "<class 'custom_nodes.TE_image.TE_Batch_Tools.TEMANBatchEnhancedSettingsNode'>",
+          "TE_Bernini_R_Generator": "<class 'custom_nodes.TE_image.TE_Bernini_R_Generator.TEBerniniRGenerator'>",
+          "TE_Bernini_Prompt_Enhancer": "<class 'custom_nodes.TE_image.TE_Bernini_R_Generator.TEBerniniPromptEnhancer'>",
+          "TE_image_pro_text_tools": "<class 'custom_nodes.TE_image.TE_MAN_Text_Tools.TEMANTextToolsNode'>",
+          "TE_text_display": "<class 'custom_nodes.TE_image.TE_Text_Display.TETextDisplayNode'>",
+          "TE_image_pro_video_comparer": "<class 'custom_nodes.TE_image.TE_Video_Comparer.TEMANVideoComparerNode'>"
+        },
+        "NODE_DISPLAY_NAME_MAPPINGS": {
+          "TE_image_pro_save_video": "TE MAN 保存视频video",
+          "TE_3D_Director": "TE MAN 3D导演台",
+          "TE_MAN_Batch_Prompt": "TE MAN 批量提示词",
+          "TE_MAN_Batch_Image": "TE MAN 批量图片",
+          "TE_MAN_Batch_Enhanced_Settings": "TE MAN 批量增强设置",
+          "TE_Bernini_R_Generator": "TE MAN Bernini",
+          "TE_Bernini_Prompt_Enhancer": "TE MAN Bernini 提示词增强(本地orAPI)",
+          "TE_image_pro_text_tools": "TE MAN Text文本处理",
+          "TE_text_display": "TE MAN TEXT文本展示",
+          "TE_image_pro_video_comparer": "TE MAN 视频对比"
+        },
+        "WEB_DIRECTORY": "./web",
+        "__version__": "V0.02",
+        "display_name": "TE MAN 视频对比",
+        "module_name": "zzzz_grok_autoscale_patch",
+        "node_name": "TE_image_pro_video_comparer"
+      },
+      "classes": {
+        "Path": {
+          "doc": "PurePath subclass that can make system calls.\n\nPath represents a filesystem path but unlike PurePath, also offers\nmethods to do system calls on path objects. Depending on your system,\ninstantiating a Path will return either a PosixPath or a WindowsPath\nobject. You can also instantiate a PosixPath or WindowsPath directly,\nbut cannot instantiate a WindowsPath on a POSIX system or vice versa.",
+          "module": "pathlib._local"
+        }
+      }
+    },
+    "TE_MAN.Save_Video_With_Frame_Capture": {
+      "module": "TE_MAN.Save_Video_With_Frame_Capture",
+      "file": "D:\\a\\_temp\\ComfyUI\\custom_nodes\\TE_MAN\\Save_Video_With_Frame_Capture.pyd",
+      "doc": null,
+      "constants": {
+        "NODE_CLASS_MAPPINGS": {
+          "TE_image_pro_save_video": "<class 'custom_nodes.TE_image.Save_Video_With_Frame_Capture.TESaveVideoWithFrameCapture'>"
+        },
+        "NODE_DISPLAY_NAME_MAPPINGS": {
+          "TE_image_pro_save_video": "TE MAN 保存视频video"
+        },
+        "_HAS_COMFY_VIDEO": true,
+        "_VIDEO_EXT_BY_CONTAINER": {
+          "mp4": ".mp4",
+          "mov": ".mov",
+          "webm": ".webm",
+          "matroska": ".mkv",
+          "mkv": ".mkv",
+          "avi": ".avi",
+          "mpegts": ".ts",
+          "ts": ".ts",
+          "gif": ".gif"
+        }
+      },
+      "classes": {
+        "Path": {
+          "doc": "PurePath subclass that can make system calls.\n\nPath represents a filesystem path but unlike PurePath, also offers\nmethods to do system calls on path objects. Depending on your system,\ninstantiating a Path will return either a PosixPath or a WindowsPath\nobject. You can also instantiate a PosixPath or WindowsPath directly,\nbut cannot instantiate a WindowsPath on a POSIX system or vice versa.",
+          "module": "pathlib._local"
+        },
+        "TESaveVideoWithFrameCapture": {
+          "doc": null,
+          "module": "custom_nodes.TE_image.Save_Video_With_Frame_Capture"
+        }
+      },
+      "function_docs": {
+        "Any": "Special type indicating an unconstrained type.\n\n- Any is assignable to every type.\n- Any assumed to have all methods and attributes.\n- All values are assignable to Any.\n\nNote that all the above statements are true from the point of view of\nstatic type checkers. At runtime, Any cannot be used with instance\nchecks.",
+        "IO": "Node input/output data types.\n\nIncludes functionality for ``\"*\"`` (`ANY`) and ``\"MULTI,TYPES\"``.",
+        "Tuple": "Deprecated alias to builtins.tuple.\n\n    Tuple[X, Y] is the cross-product type of X and Y.\n\n    Example: Tuple[T1, T2] is a tuple of two elements corresponding\n    to type variables T1 and T2.  Tuple[int, float, str] is a tuple\n    of an int, a float and a string.\n\n    To specify a variable-length tuple of homogeneous type, use Tuple[T, ...].",
+        "VideoFromFile": "Class representing video input from a file."
+      }
+    },
+    "TE_MAN.TE_3D_Director": {
+      "module": "TE_MAN.TE_3D_Director",
+      "file": "D:\\a\\_temp\\ComfyUI\\custom_nodes\\TE_MAN\\TE_3D_Director.pyd",
+      "doc": null,
+      "constants": {
+        "ASSET_ROOT_NAME": "TE_MAN",
+        "CAPTURE_FOLDER": "TE_MAN_3D_Director",
+        "DEFAULT_CATEGORY": "3D导演台",
+        "DEFAULT_EXAMPLE_PROMPT": "让镜头角度和人物在场景中的站位关系按照 图1 中的设定, 把蓝色人偶替换为 图2 人物,把粉色人偶替换为 图3 人物,双方在城市街道见面",
+        "DEFAULT_PROJECT": "默认项目",
+        "NODE_CLASS_MAPPINGS": {
+          "TE_3D_Director": "<class 'custom_nodes.TE_image.TE_3D_Director.TEMan3DDirectorNode'>"
+        },
+        "NODE_DISPLAY_NAME_MAPPINGS": {
+          "TE_3D_Director": "TE MAN 3D导演台"
+        },
+        "_ROUTES_REGISTERED": false,
+        "_ROUTE_REGISTER_THREAD_STARTED": true
+      },
+      "classes": {
+        "Path": {
+          "doc": "PurePath subclass that can make system calls.\n\nPath represents a filesystem path but unlike PurePath, also offers\nmethods to do system calls on path objects. Depending on your system,\ninstantiating a Path will return either a PosixPath or a WindowsPath\nobject. You can also instantiate a PosixPath or WindowsPath directly,\nbut cannot instantiate a WindowsPath on a POSIX system or vice versa.",
+          "module": "pathlib._local"
+        },
+        "TEMan3DDirectorNode": {
+          "doc": null,
+          "module": "custom_nodes.TE_image.TE_3D_Director"
+        }
+      }
+    },
+    "TE_MAN.TE_Asset_Library": {
+      "module": "TE_MAN.TE_Asset_Library",
+      "file": "D:\\a\\_temp\\ComfyUI\\custom_nodes\\TE_MAN\\TE_Asset_Library.pyd",
+      "doc": null,
+      "constants": {
+        "ASSET_KIND_AUDIO": "audio",
+        "ASSET_KIND_IMAGE": "image",
+        "ASSET_KIND_TEXT": "text",
+        "ASSET_ROOT_NAME": "TE_MAN",
+        "AUDIO_CATEGORY": "音频",
+        "AUDIO_CONTENT_TYPES": {
+          ".wav": "audio/wav",
+          ".mp3": "audio/mpeg",
+          ".flac": "audio/flac",
+          ".ogg": "audio/ogg",
+          ".opus": "audio/opus",
+          ".m4a": "audio/mp4",
+          ".aac": "audio/aac",
+          ".wma": "audio/x-ms-wma"
+        },
+        "DEFAULT_CATEGORIES": [
+          "人物",
+          "产品",
+          "场景",
+          "背景",
+          "提示词",
+          "音频"
+        ],
+        "DEFAULT_PROJECT": "默认项目",
+        "IMAGE_CONTENT_TYPES": {
+          ".png": "image/png",
+          ".jpg": "image/jpeg",
+          ".jpeg": "image/jpeg",
+          ".webp": "image/webp",
+          ".bmp": "image/bmp",
+          ".gif": "image/gif"
+        },
+        "NODE_CLASS_MAPPINGS": {},
+        "NODE_DISPLAY_NAME_MAPPINGS": {},
+        "TEXT_CATEGORY": "提示词",
+        "TEXT_CONTENT_TYPES": {
+          ".txt": "text/plain"
+        },
+        "TEXT_PREVIEW_MAX_CHARS": 220,
+        "TE_CUSTOM_SAVE_IMAGE_TYPE": "te_custom_save"
+      },
+      "classes": {
+        "Path": {
+          "doc": "PurePath subclass that can make system calls.\n\nPath represents a filesystem path but unlike PurePath, also offers\nmethods to do system calls on path objects. Depending on your system,\ninstantiating a Path will return either a PosixPath or a WindowsPath\nobject. You can also instantiate a PosixPath or WindowsPath directly,\nbut cannot instantiate a WindowsPath on a POSIX system or vice versa.",
+          "module": "pathlib._local"
+        },
+        "TEAssetLibrary": {
+          "doc": null,
+          "module": "custom_nodes.TE_image.TE_Asset_Library"
+        }
+      }
+    },
+    "TE_MAN.TE_Batch_Tools": {
+      "module": "TE_MAN.TE_Batch_Tools",
+      "file": "D:\\a\\_temp\\ComfyUI\\custom_nodes\\TE_MAN\\TE_Batch_Tools.pyd",
+      "doc": null,
+      "constants": {
+        "BATCH_SCOPE_OPTIONS": [
+          "只执行当前线",
+          "执行整个工作流"
+        ],
+        "BATCH_SETTINGS_TYPE": "TE_BATCH_ENHANCED_SETTINGS",
+        "NODE_CLASS_MAPPINGS": {
+          "TE_MAN_Batch_Prompt": "<class 'custom_nodes.TE_image.TE_Batch_Tools.TEMANBatchPromptNode'>",
+          "TE_MAN_Batch_Image": "<class 'custom_nodes.TE_image.TE_Batch_Tools.TEMANBatchImageNode'>",
+          "TE_MAN_Batch_Enhanced_Settings": "<class 'custom_nodes.TE_image.TE_Batch_Tools.TEMANBatchEnhancedSettingsNode'>"
+        },
+        "NODE_DISPLAY_NAME_MAPPINGS": {
+          "TE_MAN_Batch_Prompt": "TE MAN 批量提示词",
+          "TE_MAN_Batch_Image": "TE MAN 批量图片",
+          "TE_MAN_Batch_Enhanced_Settings": "TE MAN 批量增强设置"
+        }
+      },
+      "classes": {
+        "TEMANBatchEnhancedSettingsNode": {
+          "doc": null,
+          "module": "custom_nodes.TE_image.TE_Batch_Tools"
+        },
+        "TEMANBatchImageNode": {
+          "doc": null,
+          "module": "custom_nodes.TE_image.TE_Batch_Tools"
+        },
+        "TEMANBatchPromptNode": {
+          "doc": null,
+          "module": "custom_nodes.TE_image.TE_Batch_Tools"
+        }
+      },
+      "function_docs": {
+        "Any": "Special type indicating an unconstrained type.\n\n- Any is assignable to every type.\n- Any assumed to have all methods and attributes.\n- All values are assignable to Any.\n\nNote that all the above statements are true from the point of view of\nstatic type checkers. At runtime, Any cannot be used with instance\nchecks.",
+        "_filename_stem": "输出用不带后缀的文件名；加载仍用完整 name。"
+      }
+    },
+    "TE_MAN.TE_Bernini_R_Generator": {
+      "module": "TE_MAN.TE_Bernini_R_Generator",
+      "file": "D:\\a\\_temp\\ComfyUI\\custom_nodes\\TE_MAN\\TE_Bernini_R_Generator.pyd",
+      "doc": null,
+      "constants": {
+        "ATTENTION_OPTIONS": [
+          "sageattn",
+          "sdpa",
+          "flash_attn_2",
+          "flash_attn_3",
+          "sageattn_3",
+          "radial_sage_attention",
+          "sageattn_compiled"
+        ],
+        "BACKEND_DIR_NAME": "te_bernini_backend",
+        "BACKEND_LORA_NONE": "none",
+        "BERNINI_DEFAULT_SYSTEM_PROMPT": "You are a helpful assistant.",
+        "BERNINI_R2V_TEMPLATE": "You are an expert at writing subject-driven video generation prompts. I'm providing you with:\n1. {image_num} reference image(s) of the subject(s) that will appear in the video (referred to as image0, image1, image2, ... in order).\n2. An original video description text.\n\nYour task is to rewrite the original description into a new format with TWO parts concatenated together:\n\n**Part 1 - Short instruction**: A concise sentence describing who the subject(s) from the reference image(s) are, what they look like briefly, where they are, and what key action/motion they perform. Reference the subject(s) using \"image0\", \"image1\", etc. to link them to the provided reference images.\n\n**Part 2 - Long instruction**: A detailed \"Generate a video where...\" paragraph that describes:\n- The subject(s) from the reference image(s) with detailed appearance (hair, clothing, accessories, expression, etc.), referencing them as \"the person/man/woman from image0\" etc.\n- The scene/environment in detail (background, lighting, objects, atmosphere).\n- The motion and actions in a step-by-step temporal sequence (at the start..., then..., after that...).\n- The motion should remain natural and realistic.\n\nRequirements:\n- You MUST reference each subject using \"image0\", \"image1\", \"image2\", etc. to correspond to the provided reference images in order.\n- The appearance description of each subject must be based on what you actually see in the reference image(s). Do NOT hallucinate details not visible in the images.\n- The scene, actions, and motion should be derived from the original description text, but rewritten to be more detailed and vivid.\n- The output must be entirely in English.\n- Return ONLY a JSON object with one key: \"rewritten_text\". The value should be the full rewritten text (short instruction + long instruction concatenated as one string). No extra text.\n\nOriginal description:\n{original_text}\n",
+        "BERNINI_T2V_A14B_EN_SYS_PROMPT": "你是一位电影导演，旨在为用户输入的原始prompt添加电影元素，改写为优质（英文）Prompt，使其完整、具有表现力注意，输出必须是英文！\n任务要求：\n1. 对于用户输入的prompt,在不改变prompt的原意（如主体、动作）前提下，从下列电影美学设定中选择不超过4种合适的时间、光源、光线强度、光线角度、对比度、饱和度、色调、拍摄角度、镜头大小、构图的电影设定细节,将这些内容添加到prompt中，让画面变得更美，注意，可以任选，不必每项都有\n  时间：[\"Day time\", \"Night time\" \"Dawn time\",\"Sunrise time\"], 如果prompt没有特别说明则选 Day time!!!\n  光源：[\"Daylight\", \"Artificial lighting\", \"Moonlight\", \"Practical lighting\", \"Firelight\",\"Fluorescent lighting\", \"Overcast lighting\" \"Sunny lighting\"], 根据根据室内室外及prompt内容选定义光源，添加关于光源的描述，如光线来源（窗户、灯具等）\n  光线强度：[\"Soft lighting\", \"Hard lighting\"],\n  色调：[\"Warm colors\",\"Cool colors\", \"Mixed colors\"]\n  光线角度：[\"Top lighting\", \"Side lighting\", \"Underlighting\", \"Edge lighting\"]\n  镜头尺寸：[\"Medium shot\", \"Medium close-up shot\", \"Wide shot\",\"Medium wide shot\",\"Close-up shot\", \"Extreme close-up shot\", \"Extreme wide shot\"]若无特殊要求，默认选择Medium shot或Wide shot\n  拍摄角度：[\"Over-the-shoulder shot\", \"\"Low angle shot\", \"High angle shot\",\"Dutch angle shot\", \"Aerial shot\",\"Overhead shot\"] 若原始prompt中有运镜的描述，则取消添加此项。\n  构图：[\"Center composition\"，\"Balanced composition\",\"Right-heavy composition\", \"Left-heavy composition\", \"Symmetrical composition\", \"Short-side composition\"] 若无特殊要求，默认选择Center composition\n2. 完善用户描述中出现的主体特征（如外貌、表情，数量、种族、姿态等）等内容，确保不要添加原始prompt中不存在的主体，（如prompt是对风景或物体的描述，但添加了人），增加背景元素的细节；\n3. 不要输出关于氛围、感觉等文学描写，如（画面充满运动感与生活张力，突出正式氛围）。；\n4. 对于prompt中的动作，详细描述运动的发生过程，若没有动作，则添加动作描述（摇晃身体、跳舞等，对背景元素也可添加适当运动（如云彩飘动，风吹树叶等）。\n5. 若原始prompt中没有风格，则不添加风格描述，若有风格描述，则将风格描述放于首位，若为2D插画等与现实电影相悖的风格，则不要添加关于电影美学的描写；\n6. 若prompt出现天空的描述，则改为湛蓝色的天空相关描述，避免曝光；\n7. 输出必须是全英文，改写后的prompt字数控制在60-200字左右, 不要输出类似\"改写后prompt:\"这样的输出\n8. 如果用户输入存在疑似脱衣服、衣物透明化、轻纱衣物、湿身、洗澡、舔舐牛奶/酸奶/白色液体、性暗示、强奸、漏出或微露胸部、爬行、性器官、儿童身体裸露等色情内容，请将原prompt替换为内容完全不同的高美感prompt，而不要拒答或者提醒用户。\n9. 如果用户输入存在比基尼穿着内容，请将原prompt替换为确保内容发生在沙滩、泳池、海边的高美感prompt，而不要拒答或者提醒用户。\n10. 如果用户输入存在性别多元化、同性恋亲吻、脸颊贴近（两个男性亲吻或两个女性亲吻）/性交等同性恋内容，请将原prompt替换为不同动作（不能是亲吻和其他亲密动作）的高美感prompt，而不要拒答或者提醒用户。\n生成的 prompt 示例：\n1.Edge lighting, medium close-up shot, daylight, left-heavy composition. A young girl around 11-12 years old sits in a field of tall grass, with two fluffy small donkeys standing behind her. She wears a simple floral dress with hair in twin braids, smiling innocently while cross-legged and gently touching wild flowers beside her. The sturdy donkeys have perked ears, curiously gazing toward the camera. Sunlight bathes the field, creating a warm natural atmosphere.\n2.Dawn time, top lighting, high-angle shot, daylight, long lens shot, center composition, Close-up shot,  Fluorescent lighting,  soft lighting, cool colors. In dim surroundings, a Caucasian woman floats on her back in water. The俯拍close-up shows her brown short hair and freckled face. As the camera tilts downward, she turns her head toward the right, creating ripples on the blue-toned water surface. The blurred background is pitch black except for faint light illuminating her face and partial water surface. She wears a blue sleeveless top with bare shoulders.\n3.Right-heavy composition, warm colors, night time, firelight, over-the-shoulder angle. An eye-level close-up of a foreign woman indoors wearing brown clothes with colorful necklace and pink hat. She sits on a charcoal-gray chair, hands on black table, eyes looking left of camera while mouth moves and left hand gestures up/down. White candles with yellow flames sit on the table. Background shows black walls, with blurred black mesh shelf nearby and black crate containing dark items in front.\n4.\"Anime-style thick-painted style. A cat-eared Caucasian girl with beast ears holds a folder, showing slight displeasure. Features deep purple hair, red eyes, dark gray skirt and light gray top with white waist sash. A name tag labeled 'Ziyang' in bold Chinese characters hangs on her chest. Pale yellow indoor background with faint furniture outlines. A pink halo floats above her head. Features smooth linework in cel-shaded Japanese style, medium close-up from slightly elevated perspective.\n",
+        "BERNINI_TASK_CODE_TO_LABEL": {
+          "t2v": "文生视频(t2v)",
+          "v2v": "视频改视频(v2v)",
+          "mv2v": "大幅度动作改视频(mv2v)",
+          "rv2v": "动作迁移/参考改视频(rv2v)",
+          "r2v": "图生视频(r2v)"
+        },
+        "BERNINI_TASK_DISPLAY_TO_CODE": {
+          "文生视频(t2v)": "t2v",
+          "视频改视频(v2v)": "v2v",
+          "大幅度动作改视频(mv2v)": "mv2v",
+          "动作迁移/参考改视频(rv2v)": "rv2v",
+          "图生视频(r2v)": "r2v"
+        },
+        "BERNINI_TASK_OPTIONS": [
+          "文生视频(t2v)",
+          "视频改视频(v2v)",
+          "大幅度动作改视频(mv2v)",
+          "动作迁移/参考改视频(rv2v)",
+          "图生视频(r2v)"
+        ],
+        "BERNINI_V2V_TEMPLATE": "Task: Video Editing\n# ROLE\nYou are an expert Video-to-Video (V2V) Prompt Engineer. Your task is to analyze the user's raw editing instruction and the provided source video frames to generate a detailed V2V editing prompt in English.\n\n# INPUT\n- User's raw instruction: \"{user_prompt}\"\n- Context: Frames of the source video are provided.\n\n# CORE GENERATION RULE\nUnless specified otherwise by the task type, your generated prompt MUST strictly follow this two-part structure:\n1. Modifications: Specifically describe what needs to be changed. Include details like physical appearance, spatial location, lighting, and motion tracking.\n2. Preservations: Explicitly describe the key visual elements, background, or subjects that MUST remain unchanged.\n3. Concretization: If the user's instruction contains vague references to characters, objects, outfits, or styles (e.g. \"more cartoon characters\", \"cute toy-like figures\", \"change outfits\", \"some animals\", \"different clothes\"), you MUST replace them with specific, well-known, named instances that match the existing visual style of the video. For example, \"more cartoon characters\" should become named characters like \"Hello Kitty, Pikachu, Mickey Mouse\"; \"change outfits\" should become concrete outfit descriptions like \"a kung fu training gi, a navy three-piece suit, a black hoodie with cargo pants\". Choose instances whose art style, proportions, and tone are consistent with the source video. Never leave generic placeholders in the final prompt.\nNote that you don't need to explicitly write \"Modifications: xx. Preservations: xx.\". Just describe it naturally, for example, \"Add an apple. The table and curtains remain unchanged.\"\n\n# TASK CATEGORIES & TEMPLATES\nFirst, analyze the user's instruction and the frames of the video to determine the specific editing task type. Then, generate the prompt using the corresponding template:\n\n1. Replacement:\n   - Format: \"Replace [original element] with [new element].\"\n2. Addition:\n   - Format: \"Add [element] + [location/action].\"\n3. Object/Background Removal:\n   - Format: \"Delete [object description] + [location].\"\n4. Subtitle Removal:\n   - Format: \"Remove subtitles from the video.\"\n5. Depth-to-Video:\n   - Format: \"Generate video with depth map. [Detailed description of the target video]\"\n6. Sketch-to-Video:\n   - Format: Provide a detailed Text-to-Video (T2V) style description of the desired output.\n7. Colorization:\n   - Format: \"Colorize the video. [Detailed description of the scene and expected colors]\"\n8. Inpainting:\n   - Format: \"Inpaint this video. [Detailed description of the scene to fill in]\"\n9. Detection:\n   - Format: \"Detect the mask region of the [specific object].\"\n10. Stylization:\n    - Format: \"Convert the video to [style name]: [brief style details].\" Keep it concise.\n11. Mixed Tasks:\n    - Format: Seamlessly integrate all requirements into a single, cohesive editing instruction. DO NOT list subtasks separately.\n12. Camera Movement (Cinematography):\n    - Format: Apply camera motion: [Camera Movement Description]\n    - Example: Apply camera motion: orbit down\n13. Change Camera Perspective (Note: this is changing the camera's viewpoint, not camera movement):\n    - Type 1: First-Third Person Change\n        - Format: Switch the camera to a [first/third]-person perspective\n    - Others:\n        - Format: Move the camera [How the camera moves from the current angle to the desired angle]\n        - Example: Move the camera forward and slightly to the left, tilting it upward and rotating to the right for a more dynamic urban perspective.\n14. Change the focus of the video:\n    - Format: Shift the focus to [describe the subjects to be focused on], making her/him/it sharp. Blur [the objects to be blurred].\n15. Other Tasks:\n    - Format: Generate logically based on the specific situation while adhering to the Core Generation Rule.\n\n# EXAMPLE OF A HIGH-QUALITY PROMPT\nAdd a pair of realistic sunglasses to the man centered in the frame: thin matte-black rectangular frame with straight temples and dark neutral-gray mirror lenses (10–15% VLT) that subtly reflect the green foliage and sky. Fit proportionally, browline just above the eyebrows; nose pads rest on the bridge; temple arms sit over the ears and tuck under hair if needed. Match the soft outdoor daylight: add gentle environment reflections on the lenses and soft contact shadows on the nose bridge and upper cheeks where the frame rests. Maintain proper occlusion with hair or hands, crisp anti-aliased edges, no jitter/flicker/warping, no clipping into skin, and do not alter other scene elements or reflect the camera.\n\n# OUTPUT REQUIREMENT\nOutput ONLY the final enhanced English prompt. Do not include any explanations, greetings, or the category name.\nDo not imagine things that do not appear in the video.\nFor camera movement and camera perspective change cases, only describe the camera transformation in one sentence, without describing anything else.\n",
+        "BERNINI_VR2V_TEMPLATE": "You are an expert at writing prompts for reference-image-guided video editing. I'm providing you with:\n1. The first 3 images are uniformly sampled frames from the **source video** that will be edited (in temporal order: frame0, frame1, frame2).\n2. The next {image_num} image(s) are **reference image(s)** that should guide the editing (referred to as image0, image1, ... in order).\n3. An original editing instruction (which may be in Chinese).\n\nThe reference image(s) may serve different roles depending on the editing task — for example, providing the target object/person for a replacement or addition, indicating a target visual style, demonstrating a target motion or pose, or guiding other attribute-level edits. Infer the role of the reference image(s) from the original instruction.\n\nYour task: Rewrite and enhance the original editing instruction into a detailed, precise English prompt for a reference-image-guided video editing model. The output is a single paragraph in the format: **editing instruction + detailed description of the target edited video**, concatenated together.\n\nFollow these rules strictly:\n\n1. **Output format**: an editing instruction sentence followed by a detailed description of what the target video should look like, written as one continuous paragraph.\n2. **Match the edit type**: use the verb that matches the actual intent — \"Replace...\", \"Remove...\", \"Add...\", \"Restyle... in the style of...\", \"Transfer the motion/pose of... to...\", \"Change the ... of ...\", etc. Do NOT force every task into a \"replace\" framing.\n3. **Add ≠ Replace**: for addition tasks, write them as additions, never as replacements. Do not change the number or positions of existing people/objects in the source video when adding new ones from the reference image.\n4. **Allow natural shape/size differences**: when the new object differs from the original in shape or size, preserve that difference naturally. Do NOT instruct the model to keep the shape or size identical.\n5. **Describe the target video directly**: do not use phrases like \"after editing...\" or \"in the edited video...\". Describe the resulting video as if it is the final result.\n6. **Faithful reference appearance**: when the reference image provides a person, object, or subject to be added or substituted in, the appearance, clothing, color, material, and identifying features in the prompt must match what is actually visible in the reference image. Do not hallucinate details that are not present in the reference image.\n7. **Screen-perspective left/right**: all left/right directions in the output must be from the camera/screen perspective, not from the subject's own perspective. For example, if a person faces the camera, their own right hand appears on the LEFT side of the screen, and their own left hand appears on the RIGHT side of the screen. Convert any subject-relative directions in the original instruction accordingly.\n8. **Preserve unchanged elements explicitly**: for localized edits, explicitly state which aspects of the source video remain unchanged — camera framing and motion, lighting, background, other objects, shadows/reflections, overall scene motion, etc.\n9. **Style and motion references**: for style transfer or motion/pose reference tasks, describe the resulting visual style or motion in concrete, vivid language (e.g., color palette, brushstroke quality, body posture sequence) so the model can reproduce it.\n10. **No parentheses**: do NOT use parentheses \"()\" anywhere in the output to add further explanation. Integrate all clarifications into the main sentence flow.\n11. **English only**: the output must be entirely in English. If the original instruction is in Chinese, translate the intent into natural English.\n12. **Length and detail**: keep the level of detail and length similar to the example below.\n\nExample output for a replacement task:\n\n\"Replace the vase on the dining table with the potted plant from the reference image, matching the original vase's position and orientation, and preserving the table setting, lighting, shadows/reflections, camera framing, and all motion unchanged. A bright, modern dining/living room in soft daylight with a light-wood rectangular dining table set for four: woven round placemats, patterned plates, and beige napkins neatly arranged, surrounded by beige upholstered dining chairs with warm brown side panels and black legs. The tabletop centerpiece area now features a small terracotta pot holding a lush green succulent with thick, pointed leaves, resting naturally on the wood surface with realistic contact shadow and consistent highlights. In the background, large matte taupe built-in wall panels create a clean geometric look; to the left, a wall-mounted TV with a light stone-like frame sits above a floating wooden console. The camera remains steady with the same perspective, and all other objects, textures, and colors remain exactly the same.\"\n\nReturn ONLY a JSON object with one key: \"rewritten_text\". The value should be the full rewritten editing prompt as one string. No extra text.\n\nOriginal instruction:\n{original_text}\n",
+        "DEFAULT_HIGH_ACCEL_LORA": "Wan-Lighting\\Wan2.2 - t2v_A14b_high_noise_lora_rank64_lightx2v_4step_1217.safetensors",
+        "DEFAULT_LOW_ACCEL_LORA": "Wan-Lighting\\Wan2.2 - t2v_A14b_low_noise_lora_rank64_lightx2v_4step_1217.safetensors",
+        "LORA_NONE": "无",
+        "NODE_CLASS_MAPPINGS": {
+          "TE_Bernini_R_Generator": "<class 'custom_nodes.TE_image.TE_Bernini_R_Generator.TEBerniniRGenerator'>",
+          "TE_Bernini_Prompt_Enhancer": "<class 'custom_nodes.TE_image.TE_Bernini_R_Generator.TEBerniniPromptEnhancer'>"
+        },
+        "NODE_DISPLAY_NAME_MAPPINGS": {
+          "TE_Bernini_R_Generator": "TE MAN Bernini",
+          "TE_Bernini_Prompt_Enhancer": "TE MAN Bernini 提示词增强(本地orAPI)"
+        },
+        "SCHEDULER_OPTIONS": [
+          "euler",
+          "unipc",
+          "dpm++",
+          "dpm++_sde",
+          "ddim",
+          "flowmatch_causvid"
+        ],
+        "_WAN_CACHE": {}
+      },
+      "classes": {
+        "ConfigManager": {
+          "doc": "集中管理 Banana Gemini 节点的配置与测试模式逻辑。",
+          "module": "custom_nodes.TE_image.config_manager"
+        },
+        "Path": {
+          "doc": "PurePath subclass that can make system calls.\n\nPath represents a filesystem path but unlike PurePath, also offers\nmethods to do system calls on path objects. Depending on your system,\ninstantiating a Path will return either a PosixPath or a WindowsPath\nobject. You can also instantiate a PosixPath or WindowsPath directly,\nbut cannot instantiate a WindowsPath on a POSIX system or vice versa.",
+          "module": "pathlib._local"
+        },
+        "TEBerniniPromptEnhancer": {
+          "doc": null,
+          "module": "custom_nodes.TE_image.TE_Bernini_R_Generator"
+        },
+        "TEBerniniRGenerator": {
+          "doc": null,
+          "module": "custom_nodes.TE_image.TE_Bernini_R_Generator"
+        }
+      },
+      "function_docs": {
+        "Any": "Special type indicating an unconstrained type.\n\n- Any is assignable to every type.\n- Any assumed to have all methods and attributes.\n- All values are assignable to Any.\n\nNote that all the above statements are true from the point of view of\nstatic type checkers. At runtime, Any cannot be used with instance\nchecks.",
+        "Dict": "Deprecated alias to dict.",
+        "Optional": "Optional[X] is equivalent to X | None.",
+        "_wan_modules": "Load the bundled Bernini backend lazily without depending on another custom node."
+      }
+    },
+    "TE_MAN.TE_MAN_Text_Tools": {
+      "module": "TE_MAN.TE_MAN_Text_Tools",
+      "file": "D:\\a\\_temp\\ComfyUI\\custom_nodes\\TE_MAN\\TE_MAN_Text_Tools.pyd",
+      "doc": null,
+      "constants": {
+        "MODULE_DIR": "D:\\a\\_temp\\ComfyUI\\custom_nodes\\TE_MAN",
+        "NODE_CLASS_MAPPINGS": {
+          "TE_image_pro_text_tools": "<class 'custom_nodes.TE_image.TE_MAN_Text_Tools.TEMANTextToolsNode'>"
+        },
+        "NODE_DISPLAY_NAME_MAPPINGS": {
+          "TE_image_pro_text_tools": "TE MAN Text文本处理"
+        },
+        "PLUGIN_DIR": "D:\\a\\_temp\\ComfyUI\\custom_nodes\\TE_MAN",
+        "QUICK_FUNCTION_CUSTOM": "自定义",
+        "QUICK_FUNCTION_IMAGE_PROMPT": "扩写生图提示词",
+        "QUICK_FUNCTION_OPTIONS": [
+          "9段分镜提示词",
+          "扩写生图提示词",
+          "扩写生视频提示词",
+          "自定义"
+        ],
+        "QUICK_FUNCTION_STORYBOARD_9": "9段分镜提示词",
+        "QUICK_FUNCTION_VIDEO_PROMPT": "扩写生视频提示词",
+        "_path": "D:\\a\\_temp\\ComfyUI\\custom_nodes\\TE_MAN"
+      },
+      "classes": {
+        "ConfigManager": {
+          "doc": "集中管理 Banana Gemini 节点的配置与测试模式逻辑。",
+          "module": "custom_nodes.TE_image.config_manager"
+        },
+        "TEMANTextToolsNode": {
+          "doc": null,
+          "module": "custom_nodes.TE_image.TE_MAN_Text_Tools"
+        }
+      },
+      "function_docs": {
+        "Any": "Special type indicating an unconstrained type.\n\n- Any is assignable to every type.\n- Any assumed to have all methods and attributes.\n- All values are assignable to Any.\n\nNote that all the above statements are true from the point of view of\nstatic type checkers. At runtime, Any cannot be used with instance\nchecks.",
+        "Dict": "Deprecated alias to dict.",
+        "List": "Deprecated alias to list.",
+        "Optional": "Optional[X] is equivalent to X | None.",
+        "Tuple": "Deprecated alias to builtins.tuple.\n\n    Tuple[X, Y] is the cross-product type of X and Y.\n\n    Example: Tuple[T1, T2] is a tuple of two elements corresponding\n    to type variables T1 and T2.  Tuple[int, float, str] is a tuple\n    of an int, a float and a string.\n\n    To specify a variable-length tuple of homogeneous type, use Tuple[T, ...]."
+      }
+    },
+    "TE_MAN.TE_Text_Display": {
+      "module": "TE_MAN.TE_Text_Display",
+      "file": "D:\\a\\_temp\\ComfyUI\\custom_nodes\\TE_MAN\\TE_Text_Display.pyd",
+      "doc": null,
+      "constants": {
+        "NODE_CLASS_MAPPINGS": {
+          "TE_text_display": "<class 'custom_nodes.TE_image.TE_Text_Display.TETextDisplayNode'>"
+        },
+        "NODE_DISPLAY_NAME_MAPPINGS": {
+          "TE_text_display": "TE MAN TEXT文本展示"
+        },
+        "SERIALIZED_PREVIEW_KEY": "te_text_display_preview_text",
+        "SERIALIZED_SOURCE_KEY": "te_text_display_source_text",
+        "SERIALIZED_TEXT_KEY": "te_text_display_saved_text"
+      },
+      "classes": {
+        "TETextDisplayNode": {
+          "doc": null,
+          "module": "custom_nodes.TE_image.TE_Text_Display"
+        }
+      }
+    },
+    "TE_MAN.TE_Video_Comparer": {
+      "module": "TE_MAN.TE_Video_Comparer",
+      "file": "D:\\a\\_temp\\ComfyUI\\custom_nodes\\TE_MAN\\TE_Video_Comparer.pyd",
+      "doc": null,
+      "constants": {
+        "NODE_CLASS_MAPPINGS": {
+          "TE_image_pro_video_comparer": "<class 'custom_nodes.TE_image.TE_Video_Comparer.TEMANVideoComparerNode'>"
+        },
+        "NODE_DISPLAY_NAME_MAPPINGS": {
+          "TE_image_pro_video_comparer": "TE MAN 视频对比"
+        }
+      },
+      "classes": {
+        "TEMANVideoComparerNode": {
+          "doc": null,
+          "module": "custom_nodes.TE_image.TE_Video_Comparer"
+        }
+      }
+    },
+    "TE_MAN.api_client": {
+      "module": "TE_MAN.api_client",
+      "file": "D:\\a\\_temp\\ComfyUI\\custom_nodes\\TE_MAN\\api_client.pyd",
+      "doc": null,
+      "constants": {
+        "MODULE_DIR": "D:\\a\\_temp\\ComfyUI\\custom_nodes\\TE_MAN"
+      },
+      "classes": {
+        "GeminiApiClient": {
+          "doc": "封装与 Gemini 兼容图像接口交互的 HTTP 客户端。",
+          "module": "custom_nodes.TE_image.api_client"
+        },
+        "HTTPAdapter": {
+          "doc": "The built-in HTTP Adapter for urllib3.\n\nProvides a general-case interface for Requests sessions to contact HTTP and\nHTTPS urls by implementing the Transport Adapter interface. This class will\nusually be created by the :class:`Session <Session>` class under the\ncovers.\n\n:param pool_connections: The number of urllib3 connection pools to cache.\n:param pool_maxsize: The maximum number of connections to save in the pool.\n:param max_retries: The maximum number of retries each connection\n    should attempt. Note, this applies only to failed DNS lookups, socket\n    connections and connection timeouts, never to requests where data has\n    made it to the server. By default, Requests does not retry failed\n    connections. If you need granular control over the conditions under\n    which we retry a request, import urllib3's ``Retry`` class and pass\n    that instead.\n:param pool_block: Whether the connection pool should block for connections.\n\nUsage::\n\n  >>> import requests\n  >>> s = requests.Session()\n  >>> a = requests.adapters.HTTPAdapter(max_retries=3)\n  >>> s.mount('http://', a)",
+          "module": "requests.adapters"
+        },
+        "InsecureRequestWarning": {
+          "doc": "Warned when making an unverified HTTPS request.",
+          "module": "urllib3.exceptions"
+        }
+      },
+      "function_docs": {
+        "Any": "Special type indicating an unconstrained type.\n\n- Any is assignable to every type.\n- Any assumed to have all methods and attributes.\n- All values are assignable to Any.\n\nNote that all the above statements are true from the point of view of\nstatic type checkers. At runtime, Any cannot be used with instance\nchecks.",
+        "Callable": "Deprecated alias to collections.abc.Callable.\n\n    Callable[[int], str] signifies a function that takes a single\n    parameter of type int and returns a str.\n\n    The subscription syntax must always be used with exactly two\n    values: the argument list and the return type.\n    The argument list must be a list of types, a ParamSpec,\n    Concatenate or ellipsis. The return type must be a single type.\n\n    There is no syntax to indicate optional or keyword arguments;\n    such function types are rarely used as callback types.",
+        "Dict": "Deprecated alias to dict.",
+        "List": "Deprecated alias to list.",
+        "Optional": "Optional[X] is equivalent to X | None.",
+        "Tuple": "Deprecated alias to builtins.tuple.\n\n    Tuple[X, Y] is the cross-product type of X and Y.\n\n    Example: Tuple[T1, T2] is a tuple of two elements corresponding\n    to type variables T1 and T2.  Tuple[int, float, str] is a tuple\n    of an int, a float and a string.\n\n    To specify a variable-length tuple of homogeneous type, use Tuple[T, ...]."
+      }
+    },
+    "TE_MAN.config_manager": {
+      "module": "TE_MAN.config_manager",
+      "file": "D:\\a\\_temp\\ComfyUI\\custom_nodes\\TE_MAN\\config_manager.pyd",
+      "doc": null,
+      "constants": {
+        "MODULE_DIR": "D:\\a\\_temp\\ComfyUI\\custom_nodes\\TE_MAN"
+      },
+      "classes": {
+        "ConfigManager": {
+          "doc": "集中管理 Banana Gemini 节点的配置与测试模式逻辑。",
+          "module": "custom_nodes.TE_image.config_manager"
+        }
+      },
+      "function_docs": {
+        "Dict": "Deprecated alias to dict.",
+        "Optional": "Optional[X] is equivalent to X | None."
+      }
+    },
+    "TE_MAN.grid_split_core": {
+      "module": "TE_MAN.grid_split_core",
+      "file": "D:\\a\\_temp\\ComfyUI\\custom_nodes\\TE_MAN\\grid_split_core.pyd",
+      "doc": null,
+      "constants": {
+        "GRID_SEPARATOR_DARK_RATIO_THRESHOLD": 0.9,
+        "GRID_SEPARATOR_LUMA_THRESHOLD": 26,
+        "GRID_SEPARATOR_MIN_BAND_THICKNESS": 2
+      },
+      "classes": {
+        "Path": {
+          "doc": "PurePath subclass that can make system calls.\n\nPath represents a filesystem path but unlike PurePath, also offers\nmethods to do system calls on path objects. Depending on your system,\ninstantiating a Path will return either a PosixPath or a WindowsPath\nobject. You can also instantiate a PosixPath or WindowsPath directly,\nbut cannot instantiate a WindowsPath on a POSIX system or vice versa.",
+          "module": "pathlib._local"
+        }
+      },
+      "function_docs": {
+        "Any": "Special type indicating an unconstrained type.\n\n- Any is assignable to every type.\n- Any assumed to have all methods and attributes.\n- All values are assignable to Any.\n\nNote that all the above statements are true from the point of view of\nstatic type checkers. At runtime, Any cannot be used with instance\nchecks.",
+        "Dict": "Deprecated alias to dict.",
+        "List": "Deprecated alias to list.",
+        "Optional": "Optional[X] is equivalent to X | None.",
+        "Sequence": "Deprecated alias to collections.abc.Sequence.",
+        "Tuple": "Deprecated alias to builtins.tuple.\n\n    Tuple[X, Y] is the cross-product type of X and Y.\n\n    Example: Tuple[T1, T2] is a tuple of two elements corresponding\n    to type variables T1 and T2.  Tuple[int, float, str] is a tuple\n    of an int, a float and a string.\n\n    To specify a variable-length tuple of homogeneous type, use Tuple[T, ...]."
+      }
+    },
+    "TE_MAN.grid_split_routes": {
+      "module": "TE_MAN.grid_split_routes",
+      "file": "D:\\a\\_temp\\ComfyUI\\custom_nodes\\TE_MAN\\grid_split_routes.pyd",
+      "doc": null,
+      "classes": {
+        "Path": {
+          "doc": "PurePath subclass that can make system calls.\n\nPath represents a filesystem path but unlike PurePath, also offers\nmethods to do system calls on path objects. Depending on your system,\ninstantiating a Path will return either a PosixPath or a WindowsPath\nobject. You can also instantiate a PosixPath or WindowsPath directly,\nbut cannot instantiate a WindowsPath on a POSIX system or vice versa.",
+          "module": "pathlib._local"
+        }
+      }
+    },
+    "TE_MAN.logger": {
+      "module": "TE_MAN.logger",
+      "file": "D:\\a\\_temp\\ComfyUI\\custom_nodes\\TE_MAN\\logger.py",
+      "doc": null,
+      "classes": {
+        "ColorScheme": {
+          "doc": "ANSI转义码颜色方案 - 柔和配色",
+          "module": "TE_MAN.logger"
+        },
+        "ProgressBar": {
+          "doc": "实时进度条 - 实心方块样式",
+          "module": "TE_MAN.logger"
+        },
+        "ThreadSafeLogger": {
+          "doc": "线程安全的日志系统 - 标准模式",
+          "module": "TE_MAN.logger"
+        },
+        "datetime": {
+          "doc": "datetime(year, month, day[, hour[, minute[, second[, microsecond[,tzinfo]]]]])\n\nThe year, month and day arguments are required. tzinfo may be None, or an\ninstance of a tzinfo subclass. The remaining arguments may be ints.",
+          "module": "datetime"
+        }
+      },
+      "function_docs": {
+        "Optional": "Optional[X] is equivalent to X | None.",
+        "get_display_width": "计算字符串的实际显示宽度（考虑中文、emoji等宽字符）\n\n规则：\n- ASCII字符（0x00-0x7F）: 宽度1\n- 中文、日文、韩文（CJK）: 宽度2\n- Emoji和其他宽字符: 宽度2"
+      }
+    },
+    "TE_MAN.save_image_with_output_core": {
+      "module": "TE_MAN.save_image_with_output_core",
+      "file": "D:\\a\\_temp\\ComfyUI\\custom_nodes\\TE_MAN\\save_image_with_output_core.pyd",
+      "doc": null,
+      "constants": {
+        "NODE_IMAGE_CACHE": {},
+        "PROMPT_UI_MAX_CHARS": 4000,
+        "SERIALIZED_IMAGES_KEY": "te_saved_preview_images",
+        "SERIALIZED_PROMPT_KEY": "te_saved_prompt_text",
+        "TE_CUSTOM_SAVE_IMAGE_TYPE": "te_custom_save",
+        "TE_PROMPT_METADATA_KEY": "te_prompt_text"
+      }
+    }
+  },
+  "module_import_errors": {
+    "TE_MAN.GPT_Image_2_Generator": "AssertionError: Torch not compiled with CUDA enabled\nTraceback (most recent call last):\n  File \"D:\\a\\TE_MAN\\TE_MAN\\scripts\\introspect_te_man.py\", line 253, in main\n    importlib.import_module(full)\n    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^\n  File \"C:\\hostedtoolcache\\windows\\Python\\3.13.16\\x64\\Lib\\importlib\\__init__.py\", line 88, in import_module\n    return _bootstrap._gcd_import(name[level:], package, level)\n           ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<frozen importlib._bootstrap>\", line 1404, in _gcd_import\n  File \"<frozen importlib._bootstrap>\", line 1369, in _find_and_load\n  File \"<frozen importlib._bootstrap>\", line 1340, in _find_and_load_unlocked\n  File \"<frozen importlib._bootstrap>\", line 935, in _load_unlocked\n  File \"<frozen importlib._bootstrap_external>\", line 1329, in exec_module\n  File \"<frozen importlib._bootstrap>\", line 488, in _call_with_frames_removed\n  File \"custom_nodes/TE_image/source_py_backup/GPT_Image_2_Generator.py\", line 15, in init custom_nodes.TE_image.GPT_Image_2_Generator\n  File \"D:\\a\\_temp\\ComfyUI\\comfy\\model_management.py\", line 364, in <module>\n    total_vram = get_total_memory(get_torch_device()) / (1024 * 1024)\n                                  ~~~~~~~~~~~~~~~~^^\n  File \"D:\\a\\_temp\\ComfyUI\\comfy\\model_management.py\", line 213, in get_torch_device\n    return torch.device(torch.cuda.current_device())\n                        ~~~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"C:\\hostedtoolcache\\windows\\Python\\3.13.16\\x64\\Lib\\site-packages\\torch\\cuda\\__init__.py\", line 1357, in current_device\n    _lazy_init()\n    ~~~~~~~~~~^^\n  File \"C:\\hostedtoolcache\\windows\\Python\\3.13.16\\x64\\Lib\\site-packages\\torch\\cuda\\__init__.py\", line 609, in _lazy_init\n    raise AssertionError(\"Torch not compiled with CUDA enabled\")\nAssertionError: Torch not compiled with CUDA enabled\n",
+    "TE_MAN.Gemini_Imagen_Generator": "AssertionError: Torch not compiled with CUDA enabled\nTraceback (most recent call last):\n  File \"D:\\a\\TE_MAN\\TE_MAN\\scripts\\introspect_te_man.py\", line 253, in main\n    importlib.import_module(full)\n    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^\n  File \"C:\\hostedtoolcache\\windows\\Python\\3.13.16\\x64\\Lib\\importlib\\__init__.py\", line 88, in import_module\n    return _bootstrap._gcd_import(name[level:], package, level)\n           ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<frozen importlib._bootstrap>\", line 1404, in _gcd_import\n  File \"<frozen importlib._bootstrap>\", line 1369, in _find_and_load\n  File \"<frozen importlib._bootstrap>\", line 1340, in _find_and_load_unlocked\n  File \"<frozen importlib._bootstrap>\", line 935, in _load_unlocked\n  File \"<frozen importlib._bootstrap_external>\", line 1329, in exec_module\n  File \"<frozen importlib._bootstrap>\", line 488, in _call_with_frames_removed\n  File \"custom_nodes/TE_image/source_py_backup/Gemini_Imagen_Generator.py\", line 22, in init custom_nodes.TE_image.Gemini_Imagen_Generator\n  File \"D:\\a\\_temp\\ComfyUI\\server.py\", line 8, in <module>\n    import nodes\n  File \"D:\\a\\_temp\\ComfyUI\\nodes.py\", line 23, in <module>\n    import comfy.diffusers_load\n  File \"D:\\a\\_temp\\ComfyUI\\comfy\\diffusers_load.py\", line 3, in <module>\n    import comfy.sd\n  File \"D:\\a\\_temp\\ComfyUI\\comfy\\sd.py\", line 6, in <module>\n    from comfy import model_management\n  File \"D:\\a\\_temp\\ComfyUI\\comfy\\model_management.py\", line 364, in <module>\n    total_vram = get_total_memory(get_torch_device()) / (1024 * 1024)\n                                  ~~~~~~~~~~~~~~~~^^\n  File \"D:\\a\\_temp\\ComfyUI\\comfy\\model_management.py\", line 213, in get_torch_device\n    return torch.device(torch.cuda.current_device())\n                        ~~~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"C:\\hostedtoolcache\\windows\\Python\\3.13.16\\x64\\Lib\\site-packages\\torch\\cuda\\__init__.py\", line 1357, in current_device\n    _lazy_init()\n    ~~~~~~~~~~^^\n  File \"C:\\hostedtoolcache\\windows\\Python\\3.13.16\\x64\\Lib\\site-packages\\torch\\cuda\\__init__.py\", line 609, in _lazy_init\n    raise AssertionError(\"Torch not compiled with CUDA enabled\")\nAssertionError: Torch not compiled with CUDA enabled\n",
+    "TE_MAN.Grok_Image_Generator": "AssertionError: Torch not compiled with CUDA enabled\nTraceback (most recent call last):\n  File \"D:\\a\\TE_MAN\\TE_MAN\\scripts\\introspect_te_man.py\", line 253, in main\n    importlib.import_module(full)\n    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^\n  File \"C:\\hostedtoolcache\\windows\\Python\\3.13.16\\x64\\Lib\\importlib\\__init__.py\", line 88, in import_module\n    return _bootstrap._gcd_import(name[level:], package, level)\n           ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<frozen importlib._bootstrap>\", line 1404, in _gcd_import\n  File \"<frozen importlib._bootstrap>\", line 1369, in _find_and_load\n  File \"<frozen importlib._bootstrap>\", line 1340, in _find_and_load_unlocked\n  File \"<frozen importlib._bootstrap>\", line 935, in _load_unlocked\n  File \"<frozen importlib._bootstrap_external>\", line 1329, in exec_module\n  File \"<frozen importlib._bootstrap>\", line 488, in _call_with_frames_removed\n  File \"custom_nodes/TE_image/source_py_backup/Grok_Image_Generator.py\", line 30, in init custom_nodes.TE_image.Grok_Image_Generator\n  File \"D:\\a\\_temp\\ComfyUI\\comfy\\model_management.py\", line 364, in <module>\n    total_vram = get_total_memory(get_torch_device()) / (1024 * 1024)\n                                  ~~~~~~~~~~~~~~~~^^\n  File \"D:\\a\\_temp\\ComfyUI\\comfy\\model_management.py\", line 213, in get_torch_device\n    return torch.device(torch.cuda.current_device())\n                        ~~~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"C:\\hostedtoolcache\\windows\\Python\\3.13.16\\x64\\Lib\\site-packages\\torch\\cuda\\__init__.py\", line 1357, in current_device\n    _lazy_init()\n    ~~~~~~~~~~^^\n  File \"C:\\hostedtoolcache\\windows\\Python\\3.13.16\\x64\\Lib\\site-packages\\torch\\cuda\\__init__.py\", line 609, in _lazy_init\n    raise AssertionError(\"Torch not compiled with CUDA enabled\")\nAssertionError: Torch not compiled with CUDA enabled\n",
+    "TE_MAN.Grok_Safe_PY": "ImportError: 无法加载 Grok_Image_Generator 基础节点: Torch not compiled with CUDA enabled\nTraceback (most recent call last):\n  File \"D:\\a\\_temp\\ComfyUI\\custom_nodes\\TE_MAN\\Grok_Safe_PY.py\", line 10, in <module>\n    from .Grok_Image_Generator import BananaGrokImageNode as _BaseGrokImageNode\n  File \"custom_nodes/TE_image/source_py_backup/Grok_Image_Generator.py\", line 30, in init custom_nodes.TE_image.Grok_Image_Generator\n  File \"D:\\a\\_temp\\ComfyUI\\comfy\\model_management.py\", line 364, in <module>\n    total_vram = get_total_memory(get_torch_device()) / (1024 * 1024)\n                                  ~~~~~~~~~~~~~~~~^^\n  File \"D:\\a\\_temp\\ComfyUI\\comfy\\model_management.py\", line 213, in get_torch_device\n    return torch.device(torch.cuda.current_device())\n                        ~~~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"C:\\hostedtoolcache\\windows\\Python\\3.13.16\\x64\\Lib\\site-packages\\torch\\cuda\\__init__.py\", line 1357, in current_device\n    _lazy_init()\n    ~~~~~~~~~~^^\n  File \"C:\\hostedtoolcache\\windows\\Python\\3.13.16\\x64\\Lib\\site-packages\\torch\\cuda\\__init__.py\", line 609, in _lazy_init\n    raise AssertionError(\"Torch not compiled with CUDA enabled\")\nAssertionError: Torch not compiled with CUDA enabled\n\nDuring handling of the above exception, another exception occurred:\n\nTraceback (most recent call last):\n  File \"D:\\a\\TE_MAN\\TE_MAN\\scripts\\introspect_te_man.py\", line 253, in main\n    importlib.import_module(full)\n    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^\n  File \"C:\\hostedtoolcache\\windows\\Python\\3.13.16\\x64\\Lib\\importlib\\__init__.py\", line 88, in import_module\n    return _bootstrap._gcd_import(name[level:], package, level)\n           ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<frozen importlib._bootstrap>\", line 1404, in _gcd_import\n  File \"<frozen importlib._bootstrap>\", line 1369, in _find_and_load\n  File \"<frozen importlib._bootstrap>\", line 1340, in _find_and_load_unlocked\n  File \"<frozen importlib._bootstrap>\", line 935, in _load_unlocked\n  File \"<frozen importlib._bootstrap_external>\", line 1027, in exec_module\n  File \"<frozen importlib._bootstrap>\", line 488, in _call_with_frames_removed\n  File \"D:\\a\\_temp\\ComfyUI\\custom_nodes\\TE_MAN\\Grok_Safe_PY.py\", line 12, in <module>\n    raise ImportError(f\"无法加载 Grok_Image_Generator 基础节点: {exc}\")\nImportError: 无法加载 Grok_Image_Generator 基础节点: Torch not compiled with CUDA enabled\n",
+    "TE_MAN.Grok_Video_Generator": "AssertionError: Torch not compiled with CUDA enabled\nTraceback (most recent call last):\n  File \"D:\\a\\TE_MAN\\TE_MAN\\scripts\\introspect_te_man.py\", line 253, in main\n    importlib.import_module(full)\n    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^\n  File \"C:\\hostedtoolcache\\windows\\Python\\3.13.16\\x64\\Lib\\importlib\\__init__.py\", line 88, in import_module\n    return _bootstrap._gcd_import(name[level:], package, level)\n           ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<frozen importlib._bootstrap>\", line 1404, in _gcd_import\n  File \"<frozen importlib._bootstrap>\", line 1369, in _find_and_load\n  File \"<frozen importlib._bootstrap>\", line 1340, in _find_and_load_unlocked\n  File \"<frozen importlib._bootstrap>\", line 935, in _load_unlocked\n  File \"<frozen importlib._bootstrap_external>\", line 1329, in exec_module\n  File \"<frozen importlib._bootstrap>\", line 488, in _call_with_frames_removed\n  File \"custom_nodes/TE_image/source_py_backup/Grok_Video_Generator.py\", line 27, in init custom_nodes.TE_image.Grok_Video_Generator\n  File \"D:\\a\\_temp\\ComfyUI\\comfy\\model_management.py\", line 364, in <module>\n    total_vram = get_total_memory(get_torch_device()) / (1024 * 1024)\n                                  ~~~~~~~~~~~~~~~~^^\n  File \"D:\\a\\_temp\\ComfyUI\\comfy\\model_management.py\", line 213, in get_torch_device\n    return torch.device(torch.cuda.current_device())\n                        ~~~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"C:\\hostedtoolcache\\windows\\Python\\3.13.16\\x64\\Lib\\site-packages\\torch\\cuda\\__init__.py\", line 1357, in current_device\n    _lazy_init()\n    ~~~~~~~~~~^^\n  File \"C:\\hostedtoolcache\\windows\\Python\\3.13.16\\x64\\Lib\\site-packages\\torch\\cuda\\__init__.py\", line 609, in _lazy_init\n    raise AssertionError(\"Torch not compiled with CUDA enabled\")\nAssertionError: Torch not compiled with CUDA enabled\n",
+    "TE_MAN.Jimeng_Video_Generator": "AssertionError: Torch not compiled with CUDA enabled\nTraceback (most recent call last):\n  File \"D:\\a\\TE_MAN\\TE_MAN\\scripts\\introspect_te_man.py\", line 253, in main\n    importlib.import_module(full)\n    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^\n  File \"C:\\hostedtoolcache\\windows\\Python\\3.13.16\\x64\\Lib\\importlib\\__init__.py\", line 88, in import_module\n    return _bootstrap._gcd_import(name[level:], package, level)\n           ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<frozen importlib._bootstrap>\", line 1404, in _gcd_import\n  File \"<frozen importlib._bootstrap>\", line 1369, in _find_and_load\n  File \"<frozen importlib._bootstrap>\", line 1340, in _find_and_load_unlocked\n  File \"<frozen importlib._bootstrap>\", line 935, in _load_unlocked\n  File \"<frozen importlib._bootstrap_external>\", line 1329, in exec_module\n  File \"<frozen importlib._bootstrap>\", line 488, in _call_with_frames_removed\n  File \"custom_nodes/TE_image/source_py_backup/Jimeng_Video_Generator.py\", line 28, in init custom_nodes.TE_image.Jimeng_Video_Generator\n  File \"D:\\a\\_temp\\ComfyUI\\comfy\\model_management.py\", line 364, in <module>\n    total_vram = get_total_memory(get_torch_device()) / (1024 * 1024)\n                                  ~~~~~~~~~~~~~~~~^^\n  File \"D:\\a\\_temp\\ComfyUI\\comfy\\model_management.py\", line 213, in get_torch_device\n    return torch.device(torch.cuda.current_device())\n                        ~~~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"C:\\hostedtoolcache\\windows\\Python\\3.13.16\\x64\\Lib\\site-packages\\torch\\cuda\\__init__.py\", line 1357, in current_device\n    _lazy_init()\n    ~~~~~~~~~~^^\n  File \"C:\\hostedtoolcache\\windows\\Python\\3.13.16\\x64\\Lib\\site-packages\\torch\\cuda\\__init__.py\", line 609, in _lazy_init\n    raise AssertionError(\"Torch not compiled with CUDA enabled\")\nAssertionError: Torch not compiled with CUDA enabled\n",
+    "TE_MAN.Save_Image_With_Output": "AssertionError: Torch not compiled with CUDA enabled\nTraceback (most recent call last):\n  File \"D:\\a\\TE_MAN\\TE_MAN\\scripts\\introspect_te_man.py\", line 253, in main\n    importlib.import_module(full)\n    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^\n  File \"C:\\hostedtoolcache\\windows\\Python\\3.13.16\\x64\\Lib\\importlib\\__init__.py\", line 88, in import_module\n    return _bootstrap._gcd_import(name[level:], package, level)\n           ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<frozen importlib._bootstrap>\", line 1404, in _gcd_import\n  File \"<frozen importlib._bootstrap>\", line 1369, in _find_and_load\n  File \"<frozen importlib._bootstrap>\", line 1340, in _find_and_load_unlocked\n  File \"<frozen importlib._bootstrap>\", line 935, in _load_unlocked\n  File \"<frozen importlib._bootstrap_external>\", line 1329, in exec_module\n  File \"<frozen importlib._bootstrap>\", line 488, in _call_with_frames_removed\n  File \"custom_nodes/TE_image/source_py_backup/Save_Image_With_Output.py\", line 14, in init custom_nodes.TE_image.Save_Image_With_Output\n  File \"D:\\a\\_temp\\ComfyUI\\nodes.py\", line 23, in <module>\n    import comfy.diffusers_load\n  File \"D:\\a\\_temp\\ComfyUI\\comfy\\diffusers_load.py\", line 3, in <module>\n    import comfy.sd\n  File \"D:\\a\\_temp\\ComfyUI\\comfy\\sd.py\", line 6, in <module>\n    from comfy import model_management\n  File \"D:\\a\\_temp\\ComfyUI\\comfy\\model_management.py\", line 364, in <module>\n    total_vram = get_total_memory(get_torch_device()) / (1024 * 1024)\n                                  ~~~~~~~~~~~~~~~~^^\n  File \"D:\\a\\_temp\\ComfyUI\\comfy\\model_management.py\", line 213, in get_torch_device\n    return torch.device(torch.cuda.current_device())\n                        ~~~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"C:\\hostedtoolcache\\windows\\Python\\3.13.16\\x64\\Lib\\site-packages\\torch\\cuda\\__init__.py\", line 1357, in current_device\n    _lazy_init()\n    ~~~~~~~~~~^^\n  File \"C:\\hostedtoolcache\\windows\\Python\\3.13.16\\x64\\Lib\\site-packages\\torch\\cuda\\__init__.py\", line 609, in _lazy_init\n    raise AssertionError(\"Torch not compiled with CUDA enabled\")\nAssertionError: Torch not compiled with CUDA enabled\n",
+    "TE_MAN.Sora_2_Video_Generator": "AssertionError: Torch not compiled with CUDA enabled\nTraceback (most recent call last):\n  File \"D:\\a\\TE_MAN\\TE_MAN\\scripts\\introspect_te_man.py\", line 253, in main\n    importlib.import_module(full)\n    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^\n  File \"C:\\hostedtoolcache\\windows\\Python\\3.13.16\\x64\\Lib\\importlib\\__init__.py\", line 88, in import_module\n    return _bootstrap._gcd_import(name[level:], package, level)\n           ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<frozen importlib._bootstrap>\", line 1404, in _gcd_import\n  File \"<frozen importlib._bootstrap>\", line 1369, in _find_and_load\n  File \"<frozen importlib._bootstrap>\", line 1340, in _find_and_load_unlocked\n  File \"<frozen importlib._bootstrap>\", line 935, in _load_unlocked\n  File \"<frozen importlib._bootstrap_external>\", line 1329, in exec_module\n  File \"<frozen importlib._bootstrap>\", line 488, in _call_with_frames_removed\n  File \"custom_nodes/TE_image/source_py_backup/Sora_2_Video_Generator.py\", line 26, in init custom_nodes.TE_image.Sora_2_Video_Generator\n  File \"D:\\a\\_temp\\ComfyUI\\comfy\\model_management.py\", line 364, in <module>\n    total_vram = get_total_memory(get_torch_device()) / (1024 * 1024)\n                                  ~~~~~~~~~~~~~~~~^^\n  File \"D:\\a\\_temp\\ComfyUI\\comfy\\model_management.py\", line 213, in get_torch_device\n    return torch.device(torch.cuda.current_device())\n                        ~~~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"C:\\hostedtoolcache\\windows\\Python\\3.13.16\\x64\\Lib\\site-packages\\torch\\cuda\\__init__.py\", line 1357, in current_device\n    _lazy_init()\n    ~~~~~~~~~~^^\n  File \"C:\\hostedtoolcache\\windows\\Python\\3.13.16\\x64\\Lib\\site-packages\\torch\\cuda\\__init__.py\", line 609, in _lazy_init\n    raise AssertionError(\"Torch not compiled with CUDA enabled\")\nAssertionError: Torch not compiled with CUDA enabled\n",
+    "TE_MAN.TE_Audio_Save_Load": "AssertionError: Torch not compiled with CUDA enabled\nTraceback (most recent call last):\n  File \"D:\\a\\TE_MAN\\TE_MAN\\scripts\\introspect_te_man.py\", line 253, in main\n    importlib.import_module(full)\n    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^\n  File \"C:\\hostedtoolcache\\windows\\Python\\3.13.16\\x64\\Lib\\importlib\\__init__.py\", line 88, in import_module\n    return _bootstrap._gcd_import(name[level:], package, level)\n           ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<frozen importlib._bootstrap>\", line 1404, in _gcd_import\n  File \"<frozen importlib._bootstrap>\", line 1369, in _find_and_load\n  File \"<frozen importlib._bootstrap>\", line 1340, in _find_and_load_unlocked\n  File \"<frozen importlib._bootstrap>\", line 935, in _load_unlocked\n  File \"<frozen importlib._bootstrap_external>\", line 1329, in exec_module\n  File \"<frozen importlib._bootstrap>\", line 488, in _call_with_frames_removed\n  File \"custom_nodes/TE_image/source_py_backup/TE_Audio_Save_Load.py\", line 11, in init custom_nodes.TE_image.TE_Audio_Save_Load\n  File \"D:\\a\\_temp\\ComfyUI\\comfy_extras\\nodes_audio.py\", line 4, in <module>\n    import comfy.model_management\n  File \"D:\\a\\_temp\\ComfyUI\\comfy\\model_management.py\", line 364, in <module>\n    total_vram = get_total_memory(get_torch_device()) / (1024 * 1024)\n                                  ~~~~~~~~~~~~~~~~^^\n  File \"D:\\a\\_temp\\ComfyUI\\comfy\\model_management.py\", line 213, in get_torch_device\n    return torch.device(torch.cuda.current_device())\n                        ~~~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"C:\\hostedtoolcache\\windows\\Python\\3.13.16\\x64\\Lib\\site-packages\\torch\\cuda\\__init__.py\", line 1357, in current_device\n    _lazy_init()\n    ~~~~~~~~~~^^\n  File \"C:\\hostedtoolcache\\windows\\Python\\3.13.16\\x64\\Lib\\site-packages\\torch\\cuda\\__init__.py\", line 609, in _lazy_init\n    raise AssertionError(\"Torch not compiled with CUDA enabled\")\nAssertionError: Torch not compiled with CUDA enabled\n",
+    "TE_MAN.TE_H3_Prompt_Enhancer": "AssertionError: Torch not compiled with CUDA enabled\nTraceback (most recent call last):\n  File \"D:\\a\\TE_MAN\\TE_MAN\\scripts\\introspect_te_man.py\", line 253, in main\n    importlib.import_module(full)\n    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^\n  File \"C:\\hostedtoolcache\\windows\\Python\\3.13.16\\x64\\Lib\\importlib\\__init__.py\", line 88, in import_module\n    return _bootstrap._gcd_import(name[level:], package, level)\n           ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<frozen importlib._bootstrap>\", line 1404, in _gcd_import\n  File \"<frozen importlib._bootstrap>\", line 1369, in _find_and_load\n  File \"<frozen importlib._bootstrap>\", line 1340, in _find_and_load_unlocked\n  File \"<frozen importlib._bootstrap>\", line 935, in _load_unlocked\n  File \"<frozen importlib._bootstrap_external>\", line 1329, in exec_module\n  File \"<frozen importlib._bootstrap>\", line 488, in _call_with_frames_removed\n  File \"custom_nodes/TE_image/source_py_backup/TE_H3_Prompt_Enhancer.py\", line 26, in init custom_nodes.TE_image.TE_H3_Prompt_Enhancer\n  File \"D:\\a\\_temp\\ComfyUI\\comfy\\model_management.py\", line 364, in <module>\n    total_vram = get_total_memory(get_torch_device()) / (1024 * 1024)\n                                  ~~~~~~~~~~~~~~~~^^\n  File \"D:\\a\\_temp\\ComfyUI\\comfy\\model_management.py\", line 213, in get_torch_device\n    return torch.device(torch.cuda.current_device())\n                        ~~~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"C:\\hostedtoolcache\\windows\\Python\\3.13.16\\x64\\Lib\\site-packages\\torch\\cuda\\__init__.py\", line 1357, in current_device\n    _lazy_init()\n    ~~~~~~~~~~^^\n  File \"C:\\hostedtoolcache\\windows\\Python\\3.13.16\\x64\\Lib\\site-packages\\torch\\cuda\\__init__.py\", line 609, in _lazy_init\n    raise AssertionError(\"Torch not compiled with CUDA enabled\")\nAssertionError: Torch not compiled with CUDA enabled\n",
+    "TE_MAN.TE_HappyH_Video": "AssertionError: Torch not compiled with CUDA enabled\nTraceback (most recent call last):\n  File \"D:\\a\\TE_MAN\\TE_MAN\\scripts\\introspect_te_man.py\", line 253, in main\n    importlib.import_module(full)\n    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^\n  File \"C:\\hostedtoolcache\\windows\\Python\\3.13.16\\x64\\Lib\\importlib\\__init__.py\", line 88, in import_module\n    return _bootstrap._gcd_import(name[level:], package, level)\n           ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<frozen importlib._bootstrap>\", line 1404, in _gcd_import\n  File \"<frozen importlib._bootstrap>\", line 1369, in _find_and_load\n  File \"<frozen importlib._bootstrap>\", line 1340, in _find_and_load_unlocked\n  File \"<frozen importlib._bootstrap>\", line 935, in _load_unlocked\n  File \"<frozen importlib._bootstrap_external>\", line 1329, in exec_module\n  File \"<frozen importlib._bootstrap>\", line 488, in _call_with_frames_removed\n  File \"custom_nodes/TE_image/source_py_backup/TE_HappyH_Video.py\", line 28, in init custom_nodes.TE_image.TE_HappyH_Video\n  File \"D:\\a\\_temp\\ComfyUI\\comfy\\model_management.py\", line 364, in <module>\n    total_vram = get_total_memory(get_torch_device()) / (1024 * 1024)\n                                  ~~~~~~~~~~~~~~~~^^\n  File \"D:\\a\\_temp\\ComfyUI\\comfy\\model_management.py\", line 213, in get_torch_device\n    return torch.device(torch.cuda.current_device())\n                        ~~~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"C:\\hostedtoolcache\\windows\\Python\\3.13.16\\x64\\Lib\\site-packages\\torch\\cuda\\__init__.py\", line 1357, in current_device\n    _lazy_init()\n    ~~~~~~~~~~^^\n  File \"C:\\hostedtoolcache\\windows\\Python\\3.13.16\\x64\\Lib\\site-packages\\torch\\cuda\\__init__.py\", line 609, in _lazy_init\n    raise AssertionError(\"Torch not compiled with CUDA enabled\")\nAssertionError: Torch not compiled with CUDA enabled\n",
+    "TE_MAN.TE_Image_Comparer": "AssertionError: Torch not compiled with CUDA enabled\nTraceback (most recent call last):\n  File \"D:\\a\\TE_MAN\\TE_MAN\\scripts\\introspect_te_man.py\", line 253, in main\n    importlib.import_module(full)\n    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^\n  File \"C:\\hostedtoolcache\\windows\\Python\\3.13.16\\x64\\Lib\\importlib\\__init__.py\", line 88, in import_module\n    return _bootstrap._gcd_import(name[level:], package, level)\n           ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<frozen importlib._bootstrap>\", line 1404, in _gcd_import\n  File \"<frozen importlib._bootstrap>\", line 1369, in _find_and_load\n  File \"<frozen importlib._bootstrap>\", line 1340, in _find_and_load_unlocked\n  File \"<frozen importlib._bootstrap>\", line 935, in _load_unlocked\n  File \"<frozen importlib._bootstrap_external>\", line 1329, in exec_module\n  File \"<frozen importlib._bootstrap>\", line 488, in _call_with_frames_removed\n  File \"custom_nodes/TE_image/source_py_backup/TE_Image_Comparer.py\", line 4, in init custom_nodes.TE_image.TE_Image_Comparer\n  File \"D:\\a\\_temp\\ComfyUI\\nodes.py\", line 23, in <module>\n    import comfy.diffusers_load\n  File \"D:\\a\\_temp\\ComfyUI\\comfy\\diffusers_load.py\", line 3, in <module>\n    import comfy.sd\n  File \"D:\\a\\_temp\\ComfyUI\\comfy\\sd.py\", line 6, in <module>\n    from comfy import model_management\n  File \"D:\\a\\_temp\\ComfyUI\\comfy\\model_management.py\", line 364, in <module>\n    total_vram = get_total_memory(get_torch_device()) / (1024 * 1024)\n                                  ~~~~~~~~~~~~~~~~^^\n  File \"D:\\a\\_temp\\ComfyUI\\comfy\\model_management.py\", line 213, in get_torch_device\n    return torch.device(torch.cuda.current_device())\n                        ~~~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"C:\\hostedtoolcache\\windows\\Python\\3.13.16\\x64\\Lib\\site-packages\\torch\\cuda\\__init__.py\", line 1357, in current_device\n    _lazy_init()\n    ~~~~~~~~~~^^\n  File \"C:\\hostedtoolcache\\windows\\Python\\3.13.16\\x64\\Lib\\site-packages\\torch\\cuda\\__init__.py\", line 609, in _lazy_init\n    raise AssertionError(\"Torch not compiled with CUDA enabled\")\nAssertionError: Torch not compiled with CUDA enabled\n",
+    "TE_MAN.TE_Image_Compress": "AssertionError: Torch not compiled with CUDA enabled\nTraceback (most recent call last):\n  File \"D:\\a\\TE_MAN\\TE_MAN\\scripts\\introspect_te_man.py\", line 253, in main\n    importlib.import_module(full)\n    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^\n  File \"C:\\hostedtoolcache\\windows\\Python\\3.13.16\\x64\\Lib\\importlib\\__init__.py\", line 88, in import_module\n    return _bootstrap._gcd_import(name[level:], package, level)\n           ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<frozen importlib._bootstrap>\", line 1404, in _gcd_import\n  File \"<frozen importlib._bootstrap>\", line 1369, in _find_and_load\n  File \"<frozen importlib._bootstrap>\", line 1340, in _find_and_load_unlocked\n  File \"<frozen importlib._bootstrap>\", line 935, in _load_unlocked\n  File \"<frozen importlib._bootstrap_external>\", line 1329, in exec_module\n  File \"<frozen importlib._bootstrap>\", line 488, in _call_with_frames_removed\n  File \"custom_nodes/TE_image/source_py_backup/TE_Image_Compress.py\", line 19, in init custom_nodes.TE_image.TE_Image_Compress\n  File \"custom_nodes/TE_image/source_py_backup/image_codec.py\", line 17, in init custom_nodes.TE_image.image_codec\n  File \"D:\\a\\_temp\\ComfyUI\\comfy\\model_management.py\", line 364, in <module>\n    total_vram = get_total_memory(get_torch_device()) / (1024 * 1024)\n                                  ~~~~~~~~~~~~~~~~^^\n  File \"D:\\a\\_temp\\ComfyUI\\comfy\\model_management.py\", line 213, in get_torch_device\n    return torch.device(torch.cuda.current_device())\n                        ~~~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"C:\\hostedtoolcache\\windows\\Python\\3.13.16\\x64\\Lib\\site-packages\\torch\\cuda\\__init__.py\", line 1357, in current_device\n    _lazy_init()\n    ~~~~~~~~~~^^\n  File \"C:\\hostedtoolcache\\windows\\Python\\3.13.16\\x64\\Lib\\site-packages\\torch\\cuda\\__init__.py\", line 609, in _lazy_init\n    raise AssertionError(\"Torch not compiled with CUDA enabled\")\nAssertionError: Torch not compiled with CUDA enabled\n",
+    "TE_MAN.TE_Image_Compress_Test": "AssertionError: Torch not compiled with CUDA enabled\nTraceback (most recent call last):\n  File \"D:\\a\\TE_MAN\\TE_MAN\\scripts\\introspect_te_man.py\", line 253, in main\n    importlib.import_module(full)\n    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^\n  File \"C:\\hostedtoolcache\\windows\\Python\\3.13.16\\x64\\Lib\\importlib\\__init__.py\", line 88, in import_module\n    return _bootstrap._gcd_import(name[level:], package, level)\n           ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<frozen importlib._bootstrap>\", line 1404, in _gcd_import\n  File \"<frozen importlib._bootstrap>\", line 1369, in _find_and_load\n  File \"<frozen importlib._bootstrap>\", line 1340, in _find_and_load_unlocked\n  File \"<frozen importlib._bootstrap>\", line 935, in _load_unlocked\n  File \"<frozen importlib._bootstrap_external>\", line 1329, in exec_module\n  File \"<frozen importlib._bootstrap>\", line 488, in _call_with_frames_removed\n  File \"custom_nodes/TE_image/source_py_backup/TE_Image_Compress_Test.py\", line 20, in init custom_nodes.TE_image.TE_Image_Compress_Test\n  File \"custom_nodes/TE_image/source_py_backup/image_codec.py\", line 17, in init custom_nodes.TE_image.image_codec\n  File \"D:\\a\\_temp\\ComfyUI\\comfy\\model_management.py\", line 364, in <module>\n    total_vram = get_total_memory(get_torch_device()) / (1024 * 1024)\n                                  ~~~~~~~~~~~~~~~~^^\n  File \"D:\\a\\_temp\\ComfyUI\\comfy\\model_management.py\", line 213, in get_torch_device\n    return torch.device(torch.cuda.current_device())\n                        ~~~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"C:\\hostedtoolcache\\windows\\Python\\3.13.16\\x64\\Lib\\site-packages\\torch\\cuda\\__init__.py\", line 1357, in current_device\n    _lazy_init()\n    ~~~~~~~~~~^^\n  File \"C:\\hostedtoolcache\\windows\\Python\\3.13.16\\x64\\Lib\\site-packages\\torch\\cuda\\__init__.py\", line 609, in _lazy_init\n    raise AssertionError(\"Torch not compiled with CUDA enabled\")\nAssertionError: Torch not compiled with CUDA enabled\n",
+    "TE_MAN.TE_MAN_Chat": "AssertionError: Torch not compiled with CUDA enabled\nTraceback (most recent call last):\n  File \"D:\\a\\TE_MAN\\TE_MAN\\scripts\\introspect_te_man.py\", line 253, in main\n    importlib.import_module(full)\n    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^\n  File \"C:\\hostedtoolcache\\windows\\Python\\3.13.16\\x64\\Lib\\importlib\\__init__.py\", line 88, in import_module\n    return _bootstrap._gcd_import(name[level:], package, level)\n           ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<frozen importlib._bootstrap>\", line 1404, in _gcd_import\n  File \"<frozen importlib._bootstrap>\", line 1369, in _find_and_load\n  File \"<frozen importlib._bootstrap>\", line 1340, in _find_and_load_unlocked\n  File \"<frozen importlib._bootstrap>\", line 935, in _load_unlocked\n  File \"<frozen importlib._bootstrap_external>\", line 1329, in exec_module\n  File \"<frozen importlib._bootstrap>\", line 488, in _call_with_frames_removed\n  File \"custom_nodes/TE_image/source_py_backup/TE_MAN_Chat.py\", line 36, in init custom_nodes.TE_image.TE_MAN_Chat\n  File \"custom_nodes/TE_image/source_py_backup/image_codec.py\", line 17, in init custom_nodes.TE_image.image_codec\n  File \"D:\\a\\_temp\\ComfyUI\\comfy\\model_management.py\", line 364, in <module>\n    total_vram = get_total_memory(get_torch_device()) / (1024 * 1024)\n                                  ~~~~~~~~~~~~~~~~^^\n  File \"D:\\a\\_temp\\ComfyUI\\comfy\\model_management.py\", line 213, in get_torch_device\n    return torch.device(torch.cuda.current_device())\n                        ~~~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"C:\\hostedtoolcache\\windows\\Python\\3.13.16\\x64\\Lib\\site-packages\\torch\\cuda\\__init__.py\", line 1357, in current_device\n    _lazy_init()\n    ~~~~~~~~~~^^\n  File \"C:\\hostedtoolcache\\windows\\Python\\3.13.16\\x64\\Lib\\site-packages\\torch\\cuda\\__init__.py\", line 609, in _lazy_init\n    raise AssertionError(\"Torch not compiled with CUDA enabled\")\nAssertionError: Torch not compiled with CUDA enabled\n",
+    "TE_MAN.TE_MAN_MOSS": "AssertionError: Torch not compiled with CUDA enabled\nTraceback (most recent call last):\n  File \"D:\\a\\TE_MAN\\TE_MAN\\scripts\\introspect_te_man.py\", line 253, in main\n    importlib.import_module(full)\n    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^\n  File \"C:\\hostedtoolcache\\windows\\Python\\3.13.16\\x64\\Lib\\importlib\\__init__.py\", line 88, in import_module\n    return _bootstrap._gcd_import(name[level:], package, level)\n           ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<frozen importlib._bootstrap>\", line 1404, in _gcd_import\n  File \"<frozen importlib._bootstrap>\", line 1369, in _find_and_load\n  File \"<frozen importlib._bootstrap>\", line 1340, in _find_and_load_unlocked\n  File \"<frozen importlib._bootstrap>\", line 935, in _load_unlocked\n  File \"<frozen importlib._bootstrap_external>\", line 1329, in exec_module\n  File \"<frozen importlib._bootstrap>\", line 488, in _call_with_frames_removed\n  File \"custom_nodes/TE_image/source_py_backup/TE_MAN_MOSS.py\", line 29, in init custom_nodes.TE_image.TE_MAN_MOSS\n  File \"custom_nodes/TE_image/source_py_backup/TE_Qwen_Image_2_1_Prompt_Enhancer.py\", line 22, in init custom_nodes.TE_image.TE_Qwen_Image_2_1_Prompt_Enhancer\n  File \"D:\\a\\_temp\\ComfyUI\\comfy\\sd.py\", line 6, in <module>\n    from comfy import model_management\n  File \"D:\\a\\_temp\\ComfyUI\\comfy\\model_management.py\", line 364, in <module>\n    total_vram = get_total_memory(get_torch_device()) / (1024 * 1024)\n                                  ~~~~~~~~~~~~~~~~^^\n  File \"D:\\a\\_temp\\ComfyUI\\comfy\\model_management.py\", line 213, in get_torch_device\n    return torch.device(torch.cuda.current_device())\n                        ~~~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"C:\\hostedtoolcache\\windows\\Python\\3.13.16\\x64\\Lib\\site-packages\\torch\\cuda\\__init__.py\", line 1357, in current_device\n    _lazy_init()\n    ~~~~~~~~~~^^\n  File \"C:\\hostedtoolcache\\windows\\Python\\3.13.16\\x64\\Lib\\site-packages\\torch\\cuda\\__init__.py\", line 609, in _lazy_init\n    raise AssertionError(\"Torch not compiled with CUDA enabled\")\nAssertionError: Torch not compiled with CUDA enabled\n",
+    "TE_MAN.TE_Prompt_Text": "AssertionError: Torch not compiled with CUDA enabled\nTraceback (most recent call last):\n  File \"D:\\a\\TE_MAN\\TE_MAN\\scripts\\introspect_te_man.py\", line 253, in main\n    importlib.import_module(full)\n    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^\n  File \"C:\\hostedtoolcache\\windows\\Python\\3.13.16\\x64\\Lib\\importlib\\__init__.py\", line 88, in import_module\n    return _bootstrap._gcd_import(name[level:], package, level)\n           ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<frozen importlib._bootstrap>\", line 1404, in _gcd_import\n  File \"<frozen importlib._bootstrap>\", line 1369, in _find_and_load\n  File \"<frozen importlib._bootstrap>\", line 1340, in _find_and_load_unlocked\n  File \"<frozen importlib._bootstrap>\", line 935, in _load_unlocked\n  File \"<frozen importlib._bootstrap_external>\", line 1329, in exec_module\n  File \"<frozen importlib._bootstrap>\", line 488, in _call_with_frames_removed\n  File \"custom_nodes/TE_image/source_py_backup/TE_Prompt_Text.py\", line 7, in init custom_nodes.TE_image.TE_Prompt_Text\n  File \"D:\\a\\_temp\\ComfyUI\\server.py\", line 8, in <module>\n    import nodes\n  File \"D:\\a\\_temp\\ComfyUI\\nodes.py\", line 23, in <module>\n    import comfy.diffusers_load\n  File \"D:\\a\\_temp\\ComfyUI\\comfy\\diffusers_load.py\", line 3, in <module>\n    import comfy.sd\n  File \"D:\\a\\_temp\\ComfyUI\\comfy\\sd.py\", line 6, in <module>\n    from comfy import model_management\n  File \"D:\\a\\_temp\\ComfyUI\\comfy\\model_management.py\", line 364, in <module>\n    total_vram = get_total_memory(get_torch_device()) / (1024 * 1024)\n                                  ~~~~~~~~~~~~~~~~^^\n  File \"D:\\a\\_temp\\ComfyUI\\comfy\\model_management.py\", line 213, in get_torch_device\n    return torch.device(torch.cuda.current_device())\n                        ~~~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"C:\\hostedtoolcache\\windows\\Python\\3.13.16\\x64\\Lib\\site-packages\\torch\\cuda\\__init__.py\", line 1357, in current_device\n    _lazy_init()\n    ~~~~~~~~~~^^\n  File \"C:\\hostedtoolcache\\windows\\Python\\3.13.16\\x64\\Lib\\site-packages\\torch\\cuda\\__init__.py\", line 609, in _lazy_init\n    raise AssertionError(\"Torch not compiled with CUDA enabled\")\nAssertionError: Torch not compiled with CUDA enabled\n",
+    "TE_MAN.TE_Qwen_Image_2_1_Prompt_Enhancer": "AssertionError: Torch not compiled with CUDA enabled\nTraceback (most recent call last):\n  File \"D:\\a\\TE_MAN\\TE_MAN\\scripts\\introspect_te_man.py\", line 253, in main\n    importlib.import_module(full)\n    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^\n  File \"C:\\hostedtoolcache\\windows\\Python\\3.13.16\\x64\\Lib\\importlib\\__init__.py\", line 88, in import_module\n    return _bootstrap._gcd_import(name[level:], package, level)\n           ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<frozen importlib._bootstrap>\", line 1404, in _gcd_import\n  File \"<frozen importlib._bootstrap>\", line 1369, in _find_and_load\n  File \"<frozen importlib._bootstrap>\", line 1340, in _find_and_load_unlocked\n  File \"<frozen importlib._bootstrap>\", line 935, in _load_unlocked\n  File \"<frozen importlib._bootstrap_external>\", line 1329, in exec_module\n  File \"<frozen importlib._bootstrap>\", line 488, in _call_with_frames_removed\n  File \"custom_nodes/TE_image/source_py_backup/TE_Qwen_Image_2_1_Prompt_Enhancer.py\", line 22, in init custom_nodes.TE_image.TE_Qwen_Image_2_1_Prompt_Enhancer\n  File \"D:\\a\\_temp\\ComfyUI\\comfy\\sd.py\", line 6, in <module>\n    from comfy import model_management\n  File \"D:\\a\\_temp\\ComfyUI\\comfy\\model_management.py\", line 364, in <module>\n    total_vram = get_total_memory(get_torch_device()) / (1024 * 1024)\n                                  ~~~~~~~~~~~~~~~~^^\n  File \"D:\\a\\_temp\\ComfyUI\\comfy\\model_management.py\", line 213, in get_torch_device\n    return torch.device(torch.cuda.current_device())\n                        ~~~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"C:\\hostedtoolcache\\windows\\Python\\3.13.16\\x64\\Lib\\site-packages\\torch\\cuda\\__init__.py\", line 1357, in current_device\n    _lazy_init()\n    ~~~~~~~~~~^^\n  File \"C:\\hostedtoolcache\\windows\\Python\\3.13.16\\x64\\Lib\\site-packages\\torch\\cuda\\__init__.py\", line 609, in _lazy_init\n    raise AssertionError(\"Torch not compiled with CUDA enabled\")\nAssertionError: Torch not compiled with CUDA enabled\n",
+    "TE_MAN.TE_VEO_Video": "AssertionError: Torch not compiled with CUDA enabled\nTraceback (most recent call last):\n  File \"D:\\a\\TE_MAN\\TE_MAN\\scripts\\introspect_te_man.py\", line 253, in main\n    importlib.import_module(full)\n    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^\n  File \"C:\\hostedtoolcache\\windows\\Python\\3.13.16\\x64\\Lib\\importlib\\__init__.py\", line 88, in import_module\n    return _bootstrap._gcd_import(name[level:], package, level)\n           ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<frozen importlib._bootstrap>\", line 1404, in _gcd_import\n  File \"<frozen importlib._bootstrap>\", line 1369, in _find_and_load\n  File \"<frozen importlib._bootstrap>\", line 1340, in _find_and_load_unlocked\n  File \"<frozen importlib._bootstrap>\", line 935, in _load_unlocked\n  File \"<frozen importlib._bootstrap_external>\", line 1329, in exec_module\n  File \"<frozen importlib._bootstrap>\", line 488, in _call_with_frames_removed\n  File \"custom_nodes/TE_image/source_py_backup/TE_VEO_Video.py\", line 28, in init custom_nodes.TE_image.TE_VEO_Video\n  File \"D:\\a\\_temp\\ComfyUI\\comfy\\model_management.py\", line 364, in <module>\n    total_vram = get_total_memory(get_torch_device()) / (1024 * 1024)\n                                  ~~~~~~~~~~~~~~~~^^\n  File \"D:\\a\\_temp\\ComfyUI\\comfy\\model_management.py\", line 213, in get_torch_device\n    return torch.device(torch.cuda.current_device())\n                        ~~~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"C:\\hostedtoolcache\\windows\\Python\\3.13.16\\x64\\Lib\\site-packages\\torch\\cuda\\__init__.py\", line 1357, in current_device\n    _lazy_init()\n    ~~~~~~~~~~^^\n  File \"C:\\hostedtoolcache\\windows\\Python\\3.13.16\\x64\\Lib\\site-packages\\torch\\cuda\\__init__.py\", line 609, in _lazy_init\n    raise AssertionError(\"Torch not compiled with CUDA enabled\")\nAssertionError: Torch not compiled with CUDA enabled\n",
+    "TE_MAN.image_codec": "AssertionError: Torch not compiled with CUDA enabled\nTraceback (most recent call last):\n  File \"D:\\a\\TE_MAN\\TE_MAN\\scripts\\introspect_te_man.py\", line 253, in main\n    importlib.import_module(full)\n    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^\n  File \"C:\\hostedtoolcache\\windows\\Python\\3.13.16\\x64\\Lib\\importlib\\__init__.py\", line 88, in import_module\n    return _bootstrap._gcd_import(name[level:], package, level)\n           ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<frozen importlib._bootstrap>\", line 1404, in _gcd_import\n  File \"<frozen importlib._bootstrap>\", line 1369, in _find_and_load\n  File \"<frozen importlib._bootstrap>\", line 1340, in _find_and_load_unlocked\n  File \"<frozen importlib._bootstrap>\", line 935, in _load_unlocked\n  File \"<frozen importlib._bootstrap_external>\", line 1329, in exec_module\n  File \"<frozen importlib._bootstrap>\", line 488, in _call_with_frames_removed\n  File \"custom_nodes/TE_image/source_py_backup/image_codec.py\", line 17, in init custom_nodes.TE_image.image_codec\n  File \"D:\\a\\_temp\\ComfyUI\\comfy\\model_management.py\", line 364, in <module>\n    total_vram = get_total_memory(get_torch_device()) / (1024 * 1024)\n                                  ~~~~~~~~~~~~~~~~^^\n  File \"D:\\a\\_temp\\ComfyUI\\comfy\\model_management.py\", line 213, in get_torch_device\n    return torch.device(torch.cuda.current_device())\n                        ~~~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"C:\\hostedtoolcache\\windows\\Python\\3.13.16\\x64\\Lib\\site-packages\\torch\\cuda\\__init__.py\", line 1357, in current_device\n    _lazy_init()\n    ~~~~~~~~~~^^\n  File \"C:\\hostedtoolcache\\windows\\Python\\3.13.16\\x64\\Lib\\site-packages\\torch\\cuda\\__init__.py\", line 609, in _lazy_init\n    raise AssertionError(\"Torch not compiled with CUDA enabled\")\nAssertionError: Torch not compiled with CUDA enabled\n",
+    "TE_MAN.task_runner": "AssertionError: Torch not compiled with CUDA enabled\nTraceback (most recent call last):\n  File \"D:\\a\\TE_MAN\\TE_MAN\\scripts\\introspect_te_man.py\", line 253, in main\n    importlib.import_module(full)\n    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^\n  File \"C:\\hostedtoolcache\\windows\\Python\\3.13.16\\x64\\Lib\\importlib\\__init__.py\", line 88, in import_module\n    return _bootstrap._gcd_import(name[level:], package, level)\n           ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<frozen importlib._bootstrap>\", line 1404, in _gcd_import\n  File \"<frozen importlib._bootstrap>\", line 1369, in _find_and_load\n  File \"<frozen importlib._bootstrap>\", line 1340, in _find_and_load_unlocked\n  File \"<frozen importlib._bootstrap>\", line 935, in _load_unlocked\n  File \"<frozen importlib._bootstrap_external>\", line 1329, in exec_module\n  File \"<frozen importlib._bootstrap>\", line 488, in _call_with_frames_removed\n  File \"custom_nodes/TE_image/source_py_backup/task_runner.py\", line 6, in init custom_nodes.TE_image.task_runner\n  File \"D:\\a\\_temp\\ComfyUI\\comfy\\model_management.py\", line 364, in <module>\n    total_vram = get_total_memory(get_torch_device()) / (1024 * 1024)\n                                  ~~~~~~~~~~~~~~~~^^\n  File \"D:\\a\\_temp\\ComfyUI\\comfy\\model_management.py\", line 213, in get_torch_device\n    return torch.device(torch.cuda.current_device())\n                        ~~~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"C:\\hostedtoolcache\\windows\\Python\\3.13.16\\x64\\Lib\\site-packages\\torch\\cuda\\__init__.py\", line 1357, in current_device\n    _lazy_init()\n    ~~~~~~~~~~^^\n  File \"C:\\hostedtoolcache\\windows\\Python\\3.13.16\\x64\\Lib\\site-packages\\torch\\cuda\\__init__.py\", line 609, in _lazy_init\n    raise AssertionError(\"Torch not compiled with CUDA enabled\")\nAssertionError: Torch not compiled with CUDA enabled\n",
+    "TE_MAN.zzzz_grok_autoscale_patch": "ImportError: 无法加载 Grok_Image_Generator 基础节点: Torch not compiled with CUDA enabled\nTraceback (most recent call last):\n  File \"D:\\a\\_temp\\ComfyUI\\custom_nodes\\TE_MAN\\Grok_Safe_PY.py\", line 10, in <module>\n    from .Grok_Image_Generator import BananaGrokImageNode as _BaseGrokImageNode\n  File \"custom_nodes/TE_image/source_py_backup/Grok_Image_Generator.py\", line 30, in init custom_nodes.TE_image.Grok_Image_Generator\n  File \"D:\\a\\_temp\\ComfyUI\\comfy\\model_management.py\", line 364, in <module>\n    total_vram = get_total_memory(get_torch_device()) / (1024 * 1024)\n                                  ~~~~~~~~~~~~~~~~^^\n  File \"D:\\a\\_temp\\ComfyUI\\comfy\\model_management.py\", line 213, in get_torch_device\n    return torch.device(torch.cuda.current_device())\n                        ~~~~~~~~~~~~~~~~~~~~~~~~~^^\n  File \"C:\\hostedtoolcache\\windows\\Python\\3.13.16\\x64\\Lib\\site-packages\\torch\\cuda\\__init__.py\", line 1357, in current_device\n    _lazy_init()\n    ~~~~~~~~~~^^\n  File \"C:\\hostedtoolcache\\windows\\Python\\3.13.16\\x64\\Lib\\site-packages\\torch\\cuda\\__init__.py\", line 609, in _lazy_init\n    raise AssertionError(\"Torch not compiled with CUDA enabled\")\nAssertionError: Torch not compiled with CUDA enabled\n\nDuring handling of the above exception, another exception occurred:\n\nTraceback (most recent call last):\n  File \"D:\\a\\TE_MAN\\TE_MAN\\scripts\\introspect_te_man.py\", line 253, in main\n    importlib.import_module(full)\n    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^\n  File \"C:\\hostedtoolcache\\windows\\Python\\3.13.16\\x64\\Lib\\importlib\\__init__.py\", line 88, in import_module\n    return _bootstrap._gcd_import(name[level:], package, level)\n           ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<frozen importlib._bootstrap>\", line 1404, in _gcd_import\n  File \"<frozen importlib._bootstrap>\", line 1369, in _find_and_load\n  File \"<frozen importlib._bootstrap>\", line 1340, in _find_and_load_unlocked\n  File \"<frozen importlib._bootstrap>\", line 935, in _load_unlocked\n  File \"<frozen importlib._bootstrap_external>\", line 1027, in exec_module\n  File \"<frozen importlib._bootstrap>\", line 488, in _call_with_frames_removed\n  File \"D:\\a\\_temp\\ComfyUI\\custom_nodes\\TE_MAN\\zzzz_grok_autoscale_patch.py\", line 4, in <module>\n    from .Grok_Safe_PY import (\n    ...<8 lines>...\n    )\n  File \"D:\\a\\_temp\\ComfyUI\\custom_nodes\\TE_MAN\\Grok_Safe_PY.py\", line 12, in <module>\n    raise ImportError(f\"无法加载 Grok_Image_Generator 基础节点: {exc}\")\nImportError: 无法加载 Grok_Image_Generator 基础节点: Torch not compiled with CUDA enabled\n"
+  },
+  "errors": []
+}

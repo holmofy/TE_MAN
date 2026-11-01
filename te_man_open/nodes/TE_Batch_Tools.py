@@ -31,10 +31,6 @@ class TEMANBatchEnhancedSettingsNode:
         """TODO: 按 spec/TE_Batch_Tools.md 实现。输入经 kwargs 传入。"""
         raise NotImplementedError
 
-NODE_CLASS_MAPPINGS = {'TE_MAN_Batch_Enhanced_Settings': TEMANBatchEnhancedSettingsNode}
-NODE_DISPLAY_NAME_MAPPINGS = {'TE_MAN_Batch_Enhanced_Settings': 'TE MAN 批量增强设置'}
-
-
 class TEMANBatchImageNode:
     """TE MAN 批量图片
 
@@ -60,10 +56,6 @@ class TEMANBatchImageNode:
     def load_image(self, **kwargs):
         """TODO: 按 spec/TE_Batch_Tools.md 实现。输入经 kwargs 传入。"""
         raise NotImplementedError
-
-NODE_CLASS_MAPPINGS = {'TE_MAN_Batch_Image': TEMANBatchImageNode}
-NODE_DISPLAY_NAME_MAPPINGS = {'TE_MAN_Batch_Image': 'TE MAN 批量图片'}
-
 
 class TEMANBatchPromptNode:
     """TE MAN 批量提示词
@@ -91,5 +83,5 @@ class TEMANBatchPromptNode:
         """TODO: 按 spec/TE_Batch_Tools.md 实现。输入经 kwargs 传入。"""
         raise NotImplementedError
 
-NODE_CLASS_MAPPINGS = {'TE_MAN_Batch_Prompt': TEMANBatchPromptNode}
-NODE_DISPLAY_NAME_MAPPINGS = {'TE_MAN_Batch_Prompt': 'TE MAN 批量提示词'}
+NODE_CLASS_MAPPINGS = {'TE_MAN_Batch_Enhanced_Settings': TEMANBatchEnhancedSettingsNode, 'TE_MAN_Batch_Image': TEMANBatchImageNode, 'TE_MAN_Batch_Prompt': TEMANBatchPromptNode}
+NODE_DISPLAY_NAME_MAPPINGS = {'TE_MAN_Batch_Enhanced_Settings': 'TE MAN 批量增强设置', 'TE_MAN_Batch_Image': 'TE MAN 批量图片', 'TE_MAN_Batch_Prompt': 'TE MAN 批量提示词'}

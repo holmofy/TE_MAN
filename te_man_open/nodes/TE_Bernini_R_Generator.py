@@ -31,10 +31,6 @@ class TEBerniniPromptEnhancer:
         """TODO: 按 spec/TE_Bernini_R_Generator.md 实现。输入经 kwargs 传入。"""
         raise NotImplementedError
 
-NODE_CLASS_MAPPINGS = {'TE_Bernini_Prompt_Enhancer': TEBerniniPromptEnhancer}
-NODE_DISPLAY_NAME_MAPPINGS = {'TE_Bernini_Prompt_Enhancer': 'TE MAN Bernini 提示词增强(本地orAPI)'}
-
-
 class TEBerniniRGenerator:
     """TE MAN Bernini
 
@@ -60,5 +56,5 @@ class TEBerniniRGenerator:
         """TODO: 按 spec/TE_Bernini_R_Generator.md 实现。输入经 kwargs 传入。"""
         raise NotImplementedError
 
-NODE_CLASS_MAPPINGS = {'TE_Bernini_R_Generator': TEBerniniRGenerator}
-NODE_DISPLAY_NAME_MAPPINGS = {'TE_Bernini_R_Generator': 'TE MAN Bernini'}
+NODE_CLASS_MAPPINGS = {'TE_Bernini_Prompt_Enhancer': TEBerniniPromptEnhancer, 'TE_Bernini_R_Generator': TEBerniniRGenerator}
+NODE_DISPLAY_NAME_MAPPINGS = {'TE_Bernini_Prompt_Enhancer': 'TE MAN Bernini 提示词增强(本地orAPI)', 'TE_Bernini_R_Generator': 'TE MAN Bernini'}

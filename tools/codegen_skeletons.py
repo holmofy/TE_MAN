@@ -123,19 +123,24 @@ def main():
         gold = json.load(f)
     os.makedirs(OUT_DIR, exist_ok=True)
 
-    files = {}  # module -> [chunks]
+    files = {}  # module -> {"chunks": [...], "classes": [(reg, cls)], "displays": [(reg, display)]}
     for reg in sorted(gold["nodes"]):
         node = gold["nodes"][reg]
         display = gold["node_display_name_mappings"].get(reg, reg)
         mod = module_for(reg, node)
         chunk = gen_class(reg, node, display)
-        mappings = (
-            f"\n\nNODE_CLASS_MAPPINGS = {{{reg!r}: {node['class']}}}\n"
-            f"NODE_DISPLAY_NAME_MAPPINGS = {{{reg!r}: {display!r}}}\n"
-        )
-        files.setdefault(mod, []).append(chunk + mappings)
+        entry = files.setdefault(mod, {"chunks": [], "classes": [], "displays": []})
+        entry["chunks"].append(chunk)
+        entry["classes"].append((reg, node["class"]))
+        entry["displays"].append((reg, display))
 
-    for mod, chunks in sorted(files.items()):
+    for mod, entry in sorted(files.items()):
+        cls_map = ", ".join(f"{r!r}: {c}" for r, c in entry["classes"])
+        dn_map = ", ".join(f"{r!r}: {d!r}" for r, d in entry["displays"])
+        tail = (
+            "\n\nNODE_CLASS_MAPPINGS = {" + cls_map + "}\n"
+            "NODE_DISPLAY_NAME_MAPPINGS = {" + dn_map + "}\n"
+        )
         path = os.path.join(OUT_DIR, mod + ".py")
         with open(path, "w", encoding="utf-8") as f:
             f.write("# -*- coding: utf-8 -*-\n")
@@ -143,7 +148,7 @@ def main():
             f.write("本文件由 tools/codegen_skeletons.py 自动生成骨架。\n")
             f.write("INPUT_TYPES 为与原版逐字段一致的真机契约；请实现各 FUNCTION 方法。\n")
             f.write('"""\n\n')
-            f.write("\n\n".join(chunks))
+            f.write("\n\n".join(entry["chunks"]) + tail)
         print(f"  wrote {os.path.relpath(path, REPO)}")
 
     print(f"\nnodes: {len(gold['nodes'])}, files: {len(files)}")

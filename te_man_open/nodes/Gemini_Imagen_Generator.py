@@ -31,10 +31,6 @@ class BananaGeminiImageSafePyNode:
         """TODO: 按 spec/Gemini_Imagen_Generator.md 实现。输入经 kwargs 传入。"""
         raise NotImplementedError
 
-NODE_CLASS_MAPPINGS = {'TE_image_pro_banana': BananaGeminiImageSafePyNode}
-NODE_DISPLAY_NAME_MAPPINGS = {'TE_image_pro_banana': 'TE MAN Gemini Image'}
-
-
 class BananaGeminiAsyncSafePyNode:
     """TE MAN Gemini 特渠
 
@@ -61,5 +57,5 @@ class BananaGeminiAsyncSafePyNode:
         """TODO: 按 spec/Gemini_Imagen_Generator.md 实现。输入经 kwargs 传入。"""
         raise NotImplementedError
 
-NODE_CLASS_MAPPINGS = {'TE_image_pro_special_async2': BananaGeminiAsyncSafePyNode}
-NODE_DISPLAY_NAME_MAPPINGS = {'TE_image_pro_special_async2': 'TE MAN Gemini 特渠'}
+NODE_CLASS_MAPPINGS = {'TE_image_pro_banana': BananaGeminiImageSafePyNode, 'TE_image_pro_special_async2': BananaGeminiAsyncSafePyNode}
+NODE_DISPLAY_NAME_MAPPINGS = {'TE_image_pro_banana': 'TE MAN Gemini Image', 'TE_image_pro_special_async2': 'TE MAN Gemini 特渠'}

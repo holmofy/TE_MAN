@@ -31,10 +31,6 @@ class TEH3PromptEnhancer:
         """TODO: 按 spec/TE_H3_Prompt_Enhancer.md 实现。输入经 kwargs 传入。"""
         raise NotImplementedError
 
-NODE_CLASS_MAPPINGS = {'TE_H3_Prompt_Enhancer': TEH3PromptEnhancer}
-NODE_DISPLAY_NAME_MAPPINGS = {'TE_H3_Prompt_Enhancer': 'TE MAN MiniMax H3 AI提示词增强(本地orAPI)'}
-
-
 class TEH3ReferenceBridge:
     """TE MAN H3素材转接口
 
@@ -60,5 +56,5 @@ class TEH3ReferenceBridge:
         """TODO: 按 spec/TE_H3_Prompt_Enhancer.md 实现。输入经 kwargs 传入。"""
         raise NotImplementedError
 
-NODE_CLASS_MAPPINGS = {'TE_H3_Reference_Bridge': TEH3ReferenceBridge}
-NODE_DISPLAY_NAME_MAPPINGS = {'TE_H3_Reference_Bridge': 'TE MAN H3素材转接口'}
+NODE_CLASS_MAPPINGS = {'TE_H3_Prompt_Enhancer': TEH3PromptEnhancer, 'TE_H3_Reference_Bridge': TEH3ReferenceBridge}
+NODE_DISPLAY_NAME_MAPPINGS = {'TE_H3_Prompt_Enhancer': 'TE MAN MiniMax H3 AI提示词增强(本地orAPI)', 'TE_H3_Reference_Bridge': 'TE MAN H3素材转接口'}

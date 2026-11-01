@@ -32,10 +32,6 @@ class TEMossBoxNode:
         """TODO: 按 spec/TE_MAN_MOSS.md 实现。输入经 kwargs 传入。"""
         raise NotImplementedError
 
-NODE_CLASS_MAPPINGS = {'TE_image_pro_moss_box': TEMossBoxNode}
-NODE_DISPLAY_NAME_MAPPINGS = {'TE_image_pro_moss_box': 'TE MAN MOSS 增强边界框/增强提示词'}
-
-
 class TEMossLayoutNode:
     """TE MAN MOSS 增强版式规划/增强提示词
 
@@ -63,5 +59,5 @@ class TEMossLayoutNode:
         """TODO: 按 spec/TE_MAN_MOSS.md 实现。输入经 kwargs 传入。"""
         raise NotImplementedError
 
-NODE_CLASS_MAPPINGS = {'TE_image_pro_moss_layout': TEMossLayoutNode}
-NODE_DISPLAY_NAME_MAPPINGS = {'TE_image_pro_moss_layout': 'TE MAN MOSS 增强版式规划/增强提示词'}
+NODE_CLASS_MAPPINGS = {'TE_image_pro_moss_box': TEMossBoxNode, 'TE_image_pro_moss_layout': TEMossLayoutNode}
+NODE_DISPLAY_NAME_MAPPINGS = {'TE_image_pro_moss_box': 'TE MAN MOSS 增强边界框/增强提示词', 'TE_image_pro_moss_layout': 'TE MAN MOSS 增强版式规划/增强提示词'}

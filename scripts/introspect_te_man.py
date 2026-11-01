@@ -187,9 +187,10 @@ def patch_torch_cuda_stub():
         multi_processor_count=84, is_multi_gpu_board=False,
         L2_cache_size=4 * 1024 ** 2,
     )
+    _dev0 = torch.device("cuda", 0)  # 返回 device 对象，绕开 torch.device(int) 的 accelerator 路径
     cuda.is_available = lambda: True
     cuda.device_count = lambda: 1
-    cuda.current_device = lambda: 0
+    cuda.current_device = lambda: _dev0
     cuda.set_device = lambda *a, **k: None
     cuda.get_device_name = lambda *a, **k: "CUDA-EMU"
     cuda.get_device_capability = lambda *a, **k: (8, 6)
@@ -205,7 +206,29 @@ def patch_torch_cuda_stub():
     cuda.set_per_process_memory_fraction = lambda *a, **k: None
     cuda.memory_stats = lambda *a, **k: {}
     cuda.utilization = lambda *a, **k: 0
-    print("[stub] torch.cuda patched for CPU-only introspection")
+    cuda.get_sync_debug_mode = lambda *a, **k: 0
+    cuda.is_current_stream_capturing = lambda *a, **k: False
+    cuda.is_bf16_supported = lambda *a, **k: True
+    # torch 2.9+ 的统一 accelerator 层（torch.device(int) 内部会走这里）
+    try:
+        import torch.accelerator as accel
+        accel.is_available = lambda: True
+        accel.device_count = lambda: 1
+        accel.current_device = lambda: 0
+        accel.set_device = lambda *a, **k: None
+        accel.synchronize = lambda *a, **k: None
+        accel.memory_allocated = lambda *a, **k: 0
+        accel.memory_reserved = lambda *a, **k: 0
+        accel.max_memory_allocated = lambda *a, **k: 0
+        accel.max_memory_reserved = lambda *a, **k: 0
+        accel.mem_get_info = lambda *a, **k: (int(total_mem * 0.9), total_mem)
+        accel.empty_cache = lambda *a, **k: None
+        accel.get_device_capability = lambda *a, **k: (8, 6)
+        accel.get_device_name = lambda *a, **k: "CUDA-EMU"
+        accel.get_device_properties = lambda *a, **k: props
+    except Exception:  # noqa: BLE001
+        pass
+    print("[stub] torch.cuda / torch.accelerator patched for CPU-only introspection")
 
 
 # ---------------------------------------------------------------- 主流程
